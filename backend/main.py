@@ -1,5 +1,5 @@
 import os, json, uuid
-from typing import Optional, Literal
+from typing import Optional, Literal, List
 from fastapi import (
     FastAPI,
     WebSocket,
@@ -18,6 +18,7 @@ import checks
 from prompts import PROMPTS, SEED_SYSTEM
 from google.cloud import storage
 import shutil
+import tempfile
 
 # Load secrets
 load_dotenv()
@@ -219,23 +220,6 @@ async def handle_turn(session_id, user_msg, location="Tel Aviv"):
             continue
         break
 
-    # persist
-    # await DB.messages.insert_many(
-    #     [
-    #         {
-    #             "session_id": session_id,
-    #             "role": "user",
-    #             "content": user_msg,
-    #             "ts": time.time(),
-    #         },
-    #         {
-    #             "session_id": session_id,
-    #             "role": "assistant",
-    #             "content": draft,
-    #             "ts": time.time(),
-    #         },
-    #     ]
-    # )
     DB_MESSAGES.setdefault(session_id, []).append({"role": "user", "content": user_msg})
     DB_MESSAGES.setdefault(session_id, []).append(
         {"role": "assistant", "content": draft}
@@ -266,25 +250,34 @@ async def create_session():
     return {"session_id": new_id}
 
 
-@app.post("/vault/item")
-async def vault_item(
-    file: UploadFile = File(...),
+@app.post("/vault/items")
+async def vault_items(
+    files: List[UploadFile] = File(...),
     category: Literal["images", "records", "videos"] = Form(...),
 ):
-    # Save file temporarily
-    temp_path = f"/tmp/{file.filename}"
-    with open(temp_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    uploaded_files = []
 
-    # Upload to GCS in path: uploads/{category}/{filename}
-    upload_to_gcs(
-        bucket_name="mirrorme-bucket",
-        file_path=temp_path,
-        destination_blob_name=f"uploads/{category}/{file.filename}",
-    )
-    os.remove(temp_path)
+    for file in files:
+        # 1. Save to temp
+        temp_path = os.path.join(tempfile.gettempdir(), file.filename)
 
-    return {"status": "uploaded", "filename": file.filename, "category": category}
+        with open(temp_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        # 2. Upload to GCS
+        upload_to_gcs(
+            bucket_name="mirrorme-bucket",
+            file_path=temp_path,
+            destination_blob_name=f"uploads/{category}/{file.filename}",
+        )
+
+        # 3. Delete temp file
+        os.remove(temp_path)
+
+        # 4. Append result
+        uploaded_files.append({"filename": file.filename, "category": category})
+
+    return {"status": "uploaded", "files": uploaded_files}
 
 
 # WebSocket endpoint

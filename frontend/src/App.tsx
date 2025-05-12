@@ -46,6 +46,7 @@ import { Label } from "@/components/ui/label";
 import { useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2 } from "lucide-react";
 
 // -----------------------------
 // Auth Context (optional login)
@@ -64,6 +65,12 @@ interface BlogPost {
   date: string; // ISO date
   category: string;
 }
+
+const fileTypesByCategory: Record<string, string> = {
+  images: ".jpg,.jpeg,.png,.gif,.webp",
+  videos: ".mp4,.mov,.avi,.webm",
+  records: ".mp3,.wav,.m4a,.ogg",
+};
 
 const mockPosts: BlogPost[] = [
   {
@@ -356,28 +363,37 @@ const StoriesPage = () => <PlaceholderPage title="Personal Stories" />;
 
 // The Safe (requires login)
 const SafePage = () => {
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [category, setCategory] = useState("images");
   const [status, setStatus] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleUpload = async () => {
-    if (!file) return;
+    if (!files.length) return;
+
+    setLoading(true);
+    setStatus(null);
+
     const formData = new FormData();
-    formData.append("file", file);
+    files.forEach((file) => formData.append("files", file));
     formData.append("category", category);
 
     try {
-      const res = await fetch("http://localhost:8000/vault/item", {
+      const res = await fetch("http://localhost:8000/vault/items", {
         method: "POST",
         body: formData,
       });
       const data = await res.json();
-      setStatus(`✅ Uploaded ${data.filename} to ${data.category}`);
+      setStatus(`✅ Uploaded ${data.files.length} file(s) to ${category}`);
     } catch (e) {
       console.error(e);
       setStatus("❌ Upload failed");
+    } finally {
+      setLoading(false);
     }
   };
+
+  const acceptedTypes = fileTypesByCategory[category];
 
   return (
     <div className="w-full max-w-xl mx-auto py-10 space-y-6">
@@ -392,13 +408,26 @@ const SafePage = () => {
             <Input
               id="file"
               type="file"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              accept={acceptedTypes}
+              multiple
+              onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+              disabled={loading}
             />
+            <p className="text-sm text-muted-foreground">
+              Allowed: {acceptedTypes}
+            </p>
           </div>
 
           <div className="space-y-2">
             <Label>Category</Label>
-            <Tabs defaultValue={category} onValueChange={(v) => setCategory(v)}>
+            <Tabs
+              defaultValue={category}
+              onValueChange={(v) => {
+                setCategory(v);
+                setFiles([]);
+                setStatus(null);
+              }}
+            >
               <TabsList>
                 <TabsTrigger value="images">Images</TabsTrigger>
                 <TabsTrigger value="videos">Videos</TabsTrigger>
@@ -407,8 +436,14 @@ const SafePage = () => {
             </Tabs>
           </div>
 
-          <Button onClick={handleUpload} disabled={!file}>
-            Upload to Vault
+          <Button onClick={handleUpload} disabled={!files.length || loading}>
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="animate-spin size-4" /> Uploading…
+              </span>
+            ) : (
+              "Upload to Vault"
+            )}
           </Button>
 
           {status && (
