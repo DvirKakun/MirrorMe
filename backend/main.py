@@ -52,7 +52,11 @@ async def handle_turn(session_id, user_msg, location="Tel Aviv"):
         functions=[
             {
                 "name": "diagnose_risk",
-                "description": "Analyze the user’s message to assess the severity and immediacy of potential abuse, returning a risk_level (low, medium, high) and numeric score.",
+                "description": (
+                    "Call this when the user's message describes violence, fear, or potential danger. "
+                    "Use it to assess how severe or urgent the abuse situation is based on what the woman says. "
+                    "For example, if she mentions being hit, threatened, scared, or unsafe at home."
+                ),
                 "parameters": {
                     "type": "object",
                     "properties": {"text": {"type": "string"}},
@@ -61,7 +65,11 @@ async def handle_turn(session_id, user_msg, location="Tel Aviv"):
             },
             {
                 "name": "find_local_resources",
-                "description": "Retrieve relevant local support options such as hotlines and shelters based on the provided location parameter.",
+                "description": (
+                    "Call this when the user mentions a city, district, or location OR asks for help near her. "
+                    "Use it to suggest nearby hotlines or shelters. Trigger if she says 'I live in...', "
+                    "'Is there somewhere safe near...', or if she sounds ready to take action or escape."
+                ),
                 "parameters": {
                     "type": "object",
                     "properties": {"location": {"type": "string"}},
@@ -70,7 +78,11 @@ async def handle_turn(session_id, user_msg, location="Tel Aviv"):
             },
             {
                 "name": "save_report",
-                "description": "Persist an anonymous abuse report in the database and return a unique report identifier for reference.",
+                "description": (
+                    "Call this when the woman explicitly says she wants to report the abuse, file a complaint, or tell her story confidentially. "
+                    "Use this to store what she described in a secure place (without needing her name). "
+                    "Trigger if she says 'I want to report this', 'This needs to be saved', or 'Don't let him get away with it'."
+                ),
                 "parameters": {
                     "type": "object",
                     "properties": {"report": {"type": "string"}},
@@ -79,7 +91,7 @@ async def handle_turn(session_id, user_msg, location="Tel Aviv"):
             },
         ],
         function_call="auto",
-        temperature=0.7,
+        temperature=0.5,
     )
     choice = resp.choices[0]
     tool_used, tool_res, draft = None, None, None
@@ -100,7 +112,7 @@ async def handle_turn(session_id, user_msg, location="Tel Aviv"):
         )
 
         followup = client.chat.completions.create(
-            model="gpt-4o-mini", messages=messages, temperature=0.7
+            model="gpt-4o-mini", messages=messages, temperature=0.5
         )
         draft = followup.choices[0].message.content
     else:
@@ -123,7 +135,7 @@ async def handle_turn(session_id, user_msg, location="Tel Aviv"):
                                 "content": "Remove placeholders and answer clearly.",
                             }
                         ],
-                        temperature=0.7,
+                        temperature=0.5,
                     )
                 )
                 .choices[0]
@@ -142,7 +154,7 @@ async def handle_turn(session_id, user_msg, location="Tel Aviv"):
                                 "content": "Stay on topic: respond to her safety concerns.",
                             }
                         ],
-                        temperature=0.7,
+                        temperature=0.5,
                     )
                 )
                 .choices[0]
@@ -161,7 +173,7 @@ async def handle_turn(session_id, user_msg, location="Tel Aviv"):
                                 "content": "Rewrite warmly and validations.",
                             }
                         ],
-                        temperature=0.7,
+                        temperature=0.5,
                     )
                 )
                 .choices[0]
@@ -180,7 +192,7 @@ async def handle_turn(session_id, user_msg, location="Tel Aviv"):
                                 "content": "Ensure you state the risk level correctly.",
                             }
                         ],
-                        temperature=0.7,
+                        temperature=0.5,
                     )
                 )
                 .choices[0]
@@ -229,7 +241,7 @@ async def chat_endpoint(msg: ChatMsg):
     return {"session_id": sid, "reply": reply}
 
 
-@app.post("/session")
+@app.get("/session")
 async def create_session():
     new_id = str(uuid.uuid4())
 
