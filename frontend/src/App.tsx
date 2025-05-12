@@ -66,6 +66,12 @@ interface BlogPost {
   category: string;
 }
 
+interface VaultFile {
+  filename: string;
+  url: string;
+  timestamp: string;
+}
+
 const fileTypesByCategory: Record<string, string> = {
   images: ".jpg,.jpeg,.png,.gif,.webp",
   videos: ".mp4,.mov,.avi,.webm",
@@ -367,10 +373,31 @@ const SafePage = () => {
   const [category, setCategory] = useState("images");
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [vaultFiles, setVaultFiles] = useState<VaultFile[]>([]);
+  const [sort, setSort] = useState("desc");
+  const [isFetching, setIsFetching] = useState(false);
+
+  const acceptedTypes = fileTypesByCategory[category];
+
+  useEffect(() => {
+    fetchVaultFiles();
+  }, [category]);
+
+  const fetchVaultFiles = async () => {
+    setIsFetching(true);
+    try {
+      const res = await fetch(`http://localhost:8000/vault/${category}`);
+      const data = await res.json();
+      setVaultFiles(data.files);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
   const handleUpload = async () => {
     if (!files.length) return;
-
     setLoading(true);
     setStatus(null);
 
@@ -385,6 +412,7 @@ const SafePage = () => {
       });
       const data = await res.json();
       setStatus(`✅ Uploaded ${data.files.length} file(s) to ${category}`);
+      fetchVaultFiles();
     } catch (e) {
       console.error(e);
       setStatus("❌ Upload failed");
@@ -393,18 +421,24 @@ const SafePage = () => {
     }
   };
 
-  const acceptedTypes = fileTypesByCategory[category];
+  const sortedFiles = useMemo(() => {
+    const sorted = [...vaultFiles];
+    sorted.sort((a, b) => {
+      const ta = new Date(a.timestamp).getTime();
+      const tb = new Date(b.timestamp).getTime();
+      return sort === "desc" ? tb - ta : ta - tb;
+    });
+    return sorted;
+  }, [vaultFiles, sort]);
 
   return (
-    <div className="w-full max-w-xl mx-auto py-10 space-y-6">
-      <h2 className="text-2xl font-bold text-center">
-        Upload a File to the Safe
-      </h2>
+    <div className="w-full max-w-xl mx-auto py-10 space-y-8">
+      <h2 className="text-2xl font-bold text-center">Vault – Upload & View</h2>
 
       <Card>
         <CardContent className="p-6 space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="file">Choose File</Label>
+            <Label htmlFor="file">Choose Files</Label>
             <Input
               id="file"
               type="file"
@@ -453,6 +487,68 @@ const SafePage = () => {
           )}
         </CardContent>
       </Card>
+
+      <div className="flex items-center justify-between px-2">
+        <h3 className="text-xl font-semibold">Uploaded {category}</h3>
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+          className="rounded-md border px-3 py-1 text-sm bg-white shadow"
+        >
+          <option value="desc">Newest First</option>
+          <option value="asc">Oldest First</option>
+        </select>
+      </div>
+
+      <AnimatePresence>
+        {isFetching ? (
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="text-center py-6 text-muted-foreground"
+          >
+            <Loader2 className="animate-spin inline-block mr-2" /> Loading{" "}
+            {category}…
+          </motion.div>
+        ) : sortedFiles.length === 0 ? (
+          <p className="text-center text-sm text-muted-foreground">
+            No files found.
+          </p>
+        ) : (
+          <div className="grid gap-4 grid-cols-2">
+            {sortedFiles.map((file) => (
+              <motion.div
+                key={file.filename}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+                className="text-sm text-center break-words group rounded overflow-hidden border bg-white shadow transition-transform hover:shadow-lg hover:-translate-y-1"
+              >
+                {category === "images" ? (
+                  <img
+                    src={file.url}
+                    alt={file.filename}
+                    className="w-full h-40 object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                ) : category === "videos" ? (
+                  <video
+                    src={file.url}
+                    controls
+                    className="w-full h-40 object-cover rounded"
+                  />
+                ) : (
+                  <audio src={file.url} controls className="w-full p-1" />
+                )}
+                <p className="truncate mt-1 px-2 pb-2 text-xs text-gray-600">
+                  {file.filename}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

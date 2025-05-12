@@ -8,6 +8,7 @@ from fastapi import (
     UploadFile,
     Form,
     File,
+    Path,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -19,6 +20,8 @@ from prompts import PROMPTS, SEED_SYSTEM
 from google.cloud import storage
 import shutil
 import tempfile
+from datetime import timedelta
+
 
 # Load secrets
 load_dotenv()
@@ -278,6 +281,38 @@ async def vault_items(
         uploaded_files.append({"filename": file.filename, "category": category})
 
     return {"status": "uploaded", "files": uploaded_files}
+
+
+@app.get("/vault/{category}")
+async def get_files_by_category(
+    category: Literal["images", "records", "videos"] = Path(...),
+):
+    bucket_name = "mirrorme-bucket"
+    folder_path = f"uploads/{category}/"
+
+    client = storage.Client()
+    bucket = client.bucket(bucket_name)
+
+    blobs = bucket.list_blobs(prefix=folder_path)
+    file_list = []
+
+    for blob in blobs:
+        if blob.name.endswith("/"):
+            continue
+
+        signed_url = blob.generate_signed_url(
+            expiration=timedelta(minutes=30), method="GET"
+        )
+
+        file_list.append(
+            {
+                "filename": blob.name.split("/")[-1],
+                "url": signed_url,
+                "timestamp": blob.updated.isoformat(),  # ISO 8601 string
+            }
+        )
+
+    return {"category": category, "files": file_list}
 
 
 # WebSocket endpoint
