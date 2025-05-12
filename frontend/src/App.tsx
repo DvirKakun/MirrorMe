@@ -41,6 +41,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 
+import { Label } from "@/components/ui/label";
+
 import { useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -354,9 +356,70 @@ const StoriesPage = () => <PlaceholderPage title="Personal Stories" />;
 
 // The Safe (requires login)
 const SafePage = () => {
-  const { token } = useAuth();
-  if (!token) return <Navigate to="/login" replace />;
-  return <PlaceholderPage title="The Safe" />;
+  const [file, setFile] = useState<File | null>(null);
+  const [category, setCategory] = useState("images");
+  const [status, setStatus] = useState<string | null>(null);
+
+  const handleUpload = async () => {
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("category", category);
+
+    try {
+      const res = await fetch("http://localhost:8000/vault/item", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      setStatus(`✅ Uploaded ${data.filename} to ${data.category}`);
+    } catch (e) {
+      console.error(e);
+      setStatus("❌ Upload failed");
+    }
+  };
+
+  return (
+    <div className="w-full max-w-xl mx-auto py-10 space-y-6">
+      <h2 className="text-2xl font-bold text-center">
+        Upload a File to the Safe
+      </h2>
+
+      <Card>
+        <CardContent className="p-6 space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="file">Choose File</Label>
+            <Input
+              id="file"
+              type="file"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Category</Label>
+            <Tabs defaultValue={category} onValueChange={(v) => setCategory(v)}>
+              <TabsList>
+                <TabsTrigger value="images">Images</TabsTrigger>
+                <TabsTrigger value="videos">Videos</TabsTrigger>
+                <TabsTrigger value="records">Records</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          <Button onClick={handleUpload} disabled={!file}>
+            Upload to Vault
+          </Button>
+
+          {status && (
+            <p className="text-sm text-center mt-2 text-muted-foreground">
+              {status}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
 };
 
 // Generic placeholder
@@ -488,20 +551,6 @@ export default function App() {
 // -------------------------------------------------------------
 // Tailwind globals (tailwind.config.js)
 // -------------------------------------------------------------
-// module.exports = {
-//   content: ["./index.html", "./src/**/*.{ts,tsx}"],
-//   theme: {
-//     extend: {
-//       colors: {
-//         primary: {
-//           DEFAULT: "#f472b6", // rose‑400
-//           foreground: "#ffffff",
-//         },
-//       },
-//     },
-//   },
-//   plugins: [require("tailwindcss-animate")],
-// };
 // -------------------------------------------------------------
 // This scaffold gives you a running app with ChatGPT‑style chat in the
 // centre, pages ready for each use‑case, optional auth, floating helper

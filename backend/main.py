@@ -1,6 +1,14 @@
 import os, json, uuid
-from typing import Optional
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
+from typing import Optional, Literal
+from fastapi import (
+    FastAPI,
+    WebSocket,
+    WebSocketDisconnect,
+    Depends,
+    UploadFile,
+    Form,
+    File,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import OpenAI
@@ -8,14 +16,24 @@ from dotenv import load_dotenv
 from tools import diagnose_risk, find_local_resources, save_report
 import checks
 from prompts import PROMPTS, SEED_SYSTEM
+from google.cloud import storage
+import shutil
 
 # Load secrets
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-# MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-# client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_URI)
-# DB = client["MirrorMe"]
+
+GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 DB_MESSAGES: dict[str, list[dict]] = {}
+
+
+def upload_to_gcs(bucket_name, file_path, destination_blob_name):
+    gcs_client = storage.Client()
+    bucket = gcs_client.bucket(bucket_name)
+    blob = bucket.blob(destination_blob_name)
+    blob.upload_from_filename(file_path)
+    print(f"Uploaded to gs://{bucket_name}/{destination_blob_name}")
+
 
 app = FastAPI()
 app.add_middleware(  # Allow browser <→ server
@@ -246,6 +264,27 @@ async def create_session():
     new_id = str(uuid.uuid4())
 
     return {"session_id": new_id}
+
+
+@app.post("/vault/item")
+async def vault_item(
+    file: UploadFile = File(...),
+    category: Literal["images", "records", "videos"] = Form(...),
+):
+    # Save file temporarily
+    temp_path = f"/tmp/{file.filename}"
+    with open(temp_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # Upload to GCS in path: uploads/{category}/{filename}
+    upload_to_gcs(
+        bucket_name="mirrorme-bucket",
+        file_path=temp_path,
+        destination_blob_name=f"uploads/{category}/{file.filename}",
+    )
+    os.remove(temp_path)
+
+    return {"status": "uploaded", "filename": file.filename, "category": category}
 
 
 # WebSocket endpoint
