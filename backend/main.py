@@ -14,6 +14,8 @@ from mongoengine import connect, disconnect
 from backend.config.settings import get_settings
 from backend.db.mongodb import close_mongo_connection, connect_to_mongo
 from backend.services.chatbot_service import ChatbotService
+from backend.db.models.user_model import UserRegister, UserLogin
+from backend.services.authentication_service import register_user, login_user
 
 
 settings = get_settings()
@@ -227,3 +229,21 @@ async def get_files_by_category(
         )
 
     return {"category": category, "files": file_list}
+
+
+@app.post("/register")
+async def register(data: UserRegister):
+    try:
+        token = register_user(data.email, data.password)
+        return {"token": token}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/login")
+async def login(data: UserLogin):
+    try:
+        token = login_user(data.email, data.password)
+        return {"token": token}
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
