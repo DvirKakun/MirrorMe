@@ -1,14 +1,6 @@
 import os, json, uuid
 from typing import Optional, Literal, List
-from fastapi import (
-    FastAPI,
-    UploadFile,
-    Form,
-    File,
-    Path,
-    HTTPException,
-    Depends
-)
+from fastapi import FastAPI, UploadFile, Form, File, Path, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from google.cloud import storage
@@ -22,6 +14,7 @@ from mongoengine import connect, disconnect
 from backend.config.settings import get_settings
 from backend.db.mongodb import close_mongo_connection, connect_to_mongo
 from backend.services.chatbot_service import ChatbotService
+
 
 settings = get_settings()
 
@@ -37,17 +30,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Connect to MongoDB
 @app.on_event("startup")
 async def startup_db_client():
     connect_to_mongo()
 
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     close_mongo_connection()
 
+
 # Initialize chatbot service
 chatbot_service = ChatbotService()
+
 
 # Request and response models
 class MessageRequest(BaseModel):
@@ -56,10 +53,12 @@ class MessageRequest(BaseModel):
     entry_source: Optional[str] = None
     entry_statement: Optional[str] = None
 
+
 class MessageResponse(BaseModel):
     session_id: str
     response: str
     is_new: bool
+
 
 class ConversationSummary(BaseModel):
     id: str
@@ -68,10 +67,11 @@ class ConversationSummary(BaseModel):
     updated_at: datetime
     message_count: int
 
-    
+
 @app.get("/")
 async def root():
     return {"message": "Welcome to the MirrorMe Chatbot API"}
+
 
 @app.post("/chat", response_model=MessageResponse)
 async def chat(request: MessageRequest):
@@ -79,62 +79,66 @@ async def chat(request: MessageRequest):
     try:
         # Process the message
         response = chatbot_service.process_message(
-            session_id= request.session_id,
+            session_id=request.session_id,
             user_message=request.message,
             entry_source=request.entry_source,
-            entry_statement=request.entry_statement
+            entry_statement=request.entry_statement,
         )
-        
+
         return response
     except Exception as e:
         print(f"Error processing message: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/conversations", response_model=List[ConversationSummary])
 async def get_conversations(limit: int = 10):
     """Get a list of recent conversations."""
     try:
         conversations = chatbot_service.get_recent_conversations(limit=limit)
-        
+
         result = []
         for conv in conversations:
             # Get preview from last message
             preview = ""
             if conv.messages:
-                preview = conv.messages[-1].content[:100] + "..." if len(conv.messages[-1].content) > 100 else conv.messages[-1].content
-                
+                preview = (
+                    conv.messages[-1].content[:100] + "..."
+                    if len(conv.messages[-1].content) > 100
+                    else conv.messages[-1].content
+                )
+
             result.append(
                 ConversationSummary(
                     id=str(conv.id),
                     session_id=conv.session_id,
                     preview=preview,
                     updated_at=conv.updated_at,
-                    message_count=len(conv.messages)
+                    message_count=len(conv.messages),
                 )
             )
-        
+
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/conversation/{conversation_id}")
 async def get_conversation(conversation_id: str):
     """Get details of a specific conversation."""
     try:
         from backend.db.models.conversation import Conversation
-        
+
         conversation = Conversation.objects(id=conversation_id).first()
         if not conversation:
             raise HTTPException(status_code=404, detail="Conversation not found")
-        
+
         messages = []
         for msg in conversation.messages:
-            messages.append({
-                "role": msg.role,
-                "content": msg.content,
-                "timestamp": msg.timestamp
-            })
-        
+            messages.append(
+                {"role": msg.role, "content": msg.content, "timestamp": msg.timestamp}
+            )
+
         return {
             "id": str(conversation.id),
             "session_id": conversation.session_id,
@@ -142,10 +146,11 @@ async def get_conversation(conversation_id: str):
             "entry_statement": conversation.entry_statement,
             "created_at": conversation.created_at,
             "updated_at": conversation.updated_at,
-            "messages": messages
+            "messages": messages,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # Health check endpoint
 @app.get("/health")
@@ -153,14 +158,13 @@ async def health_check():
     """Check API health."""
     return {"status": "healthy", "timestamp": datetime.now()}
 
+
 def upload_to_gcs(bucket_name, file_path, destination_blob_name):
     gcs_client = storage.Client()
     bucket = gcs_client.bucket(bucket_name)
     blob = bucket.blob(destination_blob_name)
     blob.upload_from_filename(file_path)
     print(f"Uploaded to gs://{bucket_name}/{destination_blob_name}")
-
-
 
 
 @app.post("/vault/items")
@@ -223,4 +227,3 @@ async def get_files_by_category(
         )
 
     return {"category": category, "files": file_list}
-

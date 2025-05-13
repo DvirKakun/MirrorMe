@@ -142,20 +142,6 @@ export const useAuth = () => {
 };
 
 // -----------------------------
-// Session hook – required for /chat
-// -----------------------------
-const useSession = () => {
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  useEffect(() => {
-    fetch("http://localhost:8000/session")
-      .then((r) => r.json())
-      .then((d) => setSessionId(d.session_id))
-      .catch(console.error);
-  }, []);
-  return sessionId;
-};
-
-// -----------------------------
 // Main Layout
 // -----------------------------
 const Layout = ({ children }: { children: ReactNode }) => (
@@ -226,8 +212,11 @@ const ChatPage = () => {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const sessionId = useSession();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [sessionId, setSessionId] = useState<string | null>(() => {
+    // Initialize from localStorage on component mount
+    return localStorage.getItem("chatSessionId");
+  });
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -244,10 +233,16 @@ const ChatPage = () => {
         },
         body: JSON.stringify({
           message: input,
-          session_id: sessionId ?? "",
+          session_id: sessionId || "",
         }),
       });
       const data = await res.json();
+
+      if (data.session_id) {
+        setSessionId(data.session_id);
+        localStorage.setItem("chatSessionId", data.session_id);
+      }
+
       setMessages((m) => [...m, { role: "assistant", content: data.response }]);
     } catch (err) {
       console.error(err);
@@ -320,11 +315,7 @@ const ChatPage = () => {
           placeholder="כתבי את ההודעה שלך..."
         />
 
-        <Button
-          onClick={sendMessage}
-          disabled={!sessionId}
-          className="px-5 py-1.5 h-auto"
-        >
+        <Button onClick={sendMessage} className="px-5 py-1.5 h-auto">
           שלח
         </Button>
       </div>
