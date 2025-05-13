@@ -339,7 +339,7 @@ const ChatPage = () => {
     setInput("");
     setLoading(true);
 
-    try {
+  try {
       const res = await fetch("http://localhost:8000/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -357,6 +357,7 @@ const ChatPage = () => {
       setLoading(false);
     }
   };
+
 
   const handleFileUpload = () => console.log("File upload clicked");
 
