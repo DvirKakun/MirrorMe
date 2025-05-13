@@ -2,3 +2,4 @@
 .venv/
 gcs-key.json
 __pycache__/
+venv/
