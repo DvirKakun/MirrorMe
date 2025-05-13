@@ -35,17 +35,17 @@ import { clsx } from "clsx";
 
 // shadcn components
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "./components/ui/button";
+import { Input } from "./components/ui/input";
+import { Card, CardContent } from "./components/ui/card";
+import { ScrollArea } from "./components/ui/scroll-area";
+import { Textarea } from "./components/ui/textarea";
 
-import { Label } from "@/components/ui/label";
+import { Label } from "./components/ui/label";
 
 import { useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Loader2 } from "lucide-react";
 
 // -----------------------------
@@ -218,12 +218,12 @@ const ChatPage = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          user_message: input,
+          message: input,
           session_id: sessionId ?? "",
         }),
       });
       const data = await res.json();
-      setMessages((m) => [...m, { role: "assistant", content: data.reply }]);
+      setMessages((m) => [...m, { role: "assistant", content: data.response }]);
     } catch (err) {
       console.error(err);
     } finally {
@@ -268,9 +268,7 @@ const ChatPage = () => {
           rows={2}
           placeholder="Write your message…"
         />
-        <Button onClick={sendMessage} disabled={!sessionId}>
-          Send
-        </Button>
+        <Button onClick={sendMessage}>Send</Button>
       </div>
     </section>
   );
