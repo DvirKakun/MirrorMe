@@ -226,7 +226,8 @@ const ChatPage = () => {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const sessionId = useSession();
+  // const sessionId = useSession();
+  const [session_id, setSession_id] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const sendMessage = async () => {
@@ -244,10 +245,11 @@ const ChatPage = () => {
         },
         body: JSON.stringify({
           message: input,
-          session_id: sessionId ?? "",
+          session_id: session_id ?? "",
         }),
       });
       const data = await res.json();
+      setSession_id(data.session_id);
       setMessages((m) => [...m, { role: "assistant", content: data.response }]);
     } catch (err) {
       console.error(err);
@@ -320,11 +322,7 @@ const ChatPage = () => {
           placeholder="כתבי את ההודעה שלך..."
         />
 
-        <Button
-          onClick={sendMessage}
-          disabled={!sessionId}
-          className="px-5 py-1.5 h-auto"
-        >
+        <Button onClick={sendMessage} className="px-5 py-1.5 h-auto">
           שלח
         </Button>
       </div>
