@@ -14,6 +14,7 @@ from mongoengine import connect, disconnect
 from backend.config.settings import get_settings
 from backend.db.mongodb import close_mongo_connection, connect_to_mongo
 from backend.services.chatbot_service import ChatbotService
+from google.oauth2 import service_account
 
 
 settings = get_settings()
@@ -160,7 +161,14 @@ async def health_check():
 
 
 def upload_to_gcs(bucket_name, file_path, destination_blob_name):
-    gcs_client = storage.Client()
+    settings = get_settings()
+
+    # Create credentials object from the file
+    credentials = service_account.Credentials.from_service_account_file(
+        settings.GOOGLE_APPLICATION_CREDENTIALS
+    )
+
+    gcs_client = storage.Client(credentials=credentials)
     bucket = gcs_client.bucket(bucket_name)
     blob = bucket.blob(destination_blob_name)
     blob.upload_from_filename(file_path)
@@ -201,11 +209,18 @@ async def vault_items(
 async def get_files_by_category(
     category: Literal["images", "records", "videos"] = Path(...),
 ):
+    settings = get_settings()
+
+    # Create credentials object from the file
+    credentials = service_account.Credentials.from_service_account_file(
+        settings.GOOGLE_APPLICATION_CREDENTIALS
+    )
+
     bucket_name = "mirrorme-bucket"
     folder_path = f"uploads/{category}/"
 
-    client = storage.Client()
-    bucket = client.bucket(bucket_name)
+    gcs_client = storage.Client(credentials=credentials)
+    bucket = gcs_client.bucket(bucket_name)
 
     blobs = bucket.list_blobs(prefix=folder_path)
     file_list = []
