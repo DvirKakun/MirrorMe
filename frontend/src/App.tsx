@@ -212,6 +212,11 @@ const ChatPage = () => {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+<<<<<<< HEAD
+  // const sessionId = useSession();
+  const [session_id, setSession_id] = useState("");
+=======
+>>>>>>> main
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [sessionId, setSessionId] = useState<string | null>(() => {
     // Initialize from localStorage on component mount
@@ -233,6 +238,13 @@ const ChatPage = () => {
         },
         body: JSON.stringify({
           message: input,
+<<<<<<< HEAD
+          session_id: session_id ?? "",
+        }),
+      });
+      const data = await res.json();
+      setSession_id(data.session_id);
+=======
           session_id: sessionId || "",
         }),
       });
@@ -243,6 +255,7 @@ const ChatPage = () => {
         localStorage.setItem("chatSessionId", data.session_id);
       }
 
+>>>>>>> main
       setMessages((m) => [...m, { role: "assistant", content: data.response }]);
     } catch (err) {
       console.error(err);

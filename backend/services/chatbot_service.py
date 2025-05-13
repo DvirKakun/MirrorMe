@@ -146,9 +146,7 @@ class ChatbotService:
         )
 
         # Create an agent with tools if we've accumulated enough context
-        if (
-            len(langchain_messages) >= 6
-        ):  # System + intro + at least 2 user/assistant exchanges
+        if len(langchain_messages) >= 2:  # System + intro + at least 2 user/assistant exchanges
             return self._generate_agent_response(langchain_messages, user_message)
 
         # For early conversations, use a simpler approach without tools
