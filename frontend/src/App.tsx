@@ -554,7 +554,12 @@ const InfoPage = () => <PlaceholderPage title="Helpful Resources" />;
 const StoriesPage = () => <PlaceholderPage title="Personal Stories" />;
 
 // The Safe (requires login)
+// SafePage with Hebrew RTL style, authentication, and Google Drive-like interface
 const SafePage = () => {
+  const { token } = useAuth();
+  const [safeCode, setSafeCode] = useState("");
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [category, setCategory] = useState("images");
   const [status, setStatus] = useState<string | null>(null);
@@ -563,11 +568,49 @@ const SafePage = () => {
   const [sort, setSort] = useState("desc");
   const [isFetching, setIsFetching] = useState(false);
 
-  const acceptedTypes = fileTypesByCategory[category];
+  // Category info with Hebrew labels
+  interface CategoryInfo {
+    label: string;
+    icon: string;
+    acceptedTypes: string;
+    color: string;
+  }
+
+  // Define the type for the entire category information object
+  type CategoriesMap = {
+    [key: string]: CategoryInfo;
+  };
+
+  // Category info with Hebrew labels (properly typed)
+  const categoryInfo: CategoriesMap = {
+    images: {
+      label: "תמונות",
+      icon: "📷",
+      acceptedTypes: ".jpg,.jpeg,.png,.gif,.webp",
+      color: "bg-blue-50",
+    },
+    videos: {
+      label: "סרטונים",
+      icon: "🎬",
+      acceptedTypes: ".mp4,.mov,.avi,.webm",
+      color: "bg-purple-50",
+    },
+    records: {
+      label: "הקלטות",
+      icon: "🎙️",
+      acceptedTypes: ".mp3,.wav,.m4a,.ogg",
+      color: "bg-amber-50",
+    },
+  };
+
+  // Authentication check
+  const validSafeCode = "1234"; // In a real app, this would come from the user's profile
 
   useEffect(() => {
-    fetchVaultFiles();
-  }, [category]);
+    if (isUnlocked) {
+      fetchVaultFiles();
+    }
+  }, [category, isUnlocked]);
 
   const fetchVaultFiles = async () => {
     setIsFetching(true);
@@ -579,6 +622,14 @@ const SafePage = () => {
       console.error(err);
     } finally {
       setIsFetching(false);
+    }
+  };
+
+  const handleUnlock = () => {
+    if (safeCode === validSafeCode) {
+      setIsUnlocked(true);
+    } else {
+      alert("קוד הכספת שגוי. אנא נסי שוב.");
     }
   };
 
@@ -597,11 +648,15 @@ const SafePage = () => {
         body: formData,
       });
       const data = await res.json();
-      setStatus(`✅ Uploaded ${data.files.length} file(s) to ${category}`);
+      setStatus(
+        `✅ הועלו ${data.files.length} קבצים ל${categoryInfo[category].label}`
+      );
       fetchVaultFiles();
+      setShowUploadDialog(false);
+      setFiles([]);
     } catch (e) {
       console.error(e);
-      setStatus("❌ Upload failed");
+      setStatus("❌ העלאה נכשלה");
     } finally {
       setLoading(false);
     }
@@ -617,128 +672,285 @@ const SafePage = () => {
     return sorted;
   }, [vaultFiles, sort]);
 
-  return (
-    <div className="w-full max-w-xl mx-auto py-10 space-y-8">
-      <h2 className="text-2xl font-bold text-center">Vault – Upload & View</h2>
+  // Not authenticated view
+  if (!token) {
+    return (
+      <div className="w-full max-w-lg mx-auto py-16 text-center" dir="rtl">
+        <img
+          src="/images/locked-safe.png" // Replace with your safe image
+          alt="כספת נעולה"
+          className="w-64 h-64 mx-auto mb-8 rounded-lg shadow-md"
+        />
+        <h1 className="text-2xl font-bold mb-4">הכספת הדיגיטלית</h1>
+        <p className="text-lg mb-8">כדי לגשת לכספת, עליך להתחבר למערכת.</p>
+      </div>
+    );
+  }
 
-      <Card>
-        <CardContent className="p-6 space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="file">Choose Files</Label>
-            <Input
-              id="file"
-              type="file"
-              accept={acceptedTypes}
-              multiple
-              onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
-              disabled={loading}
-            />
-            <p className="text-sm text-muted-foreground">
-              Allowed: {acceptedTypes}
-            </p>
+  // Authenticated but need safe code
+  if (!isUnlocked) {
+    return (
+      <div className="w-full max-w-lg mx-auto py-16 text-center" dir="rtl">
+        <img
+          src="/images/safe-door.png" // Replace with your safe image
+          alt="דלת כספת"
+          className="w-80 h-80 mx-auto mb-8 rounded-lg shadow-md"
+        />
+        <h1 className="text-2xl font-bold mb-4">המקום הבטוח שלך</h1>
+        <p className="text-lg mb-8">
+          כאן תוכלי לשמור את כל התיעוד החשוב בצורה מאובטחת ופרטית. אף אחד מלבדך
+          לא יוכל לראות את התכנים כאן.
+        </p>
+
+        <div className="max-w-xs mx-auto space-y-4">
+          <div className="text-lg font-medium mb-2">
+            אנא הזיני את קוד הכספת שלך:
           </div>
-
-          <div className="space-y-2">
-            <Label>Category</Label>
-            <Tabs
-              defaultValue={category}
-              onValueChange={(v) => {
-                setCategory(v);
-                setFiles([]);
-                setStatus(null);
-              }}
-            >
-              <TabsList>
-                <TabsTrigger value="images">Images</TabsTrigger>
-                <TabsTrigger value="videos">Videos</TabsTrigger>
-                <TabsTrigger value="records">Records</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-
-          <Button onClick={handleUpload} disabled={!files.length || loading}>
-            {loading ? (
-              <span className="flex items-center gap-2">
-                <Loader2 className="animate-spin size-4" /> Uploading…
-              </span>
-            ) : (
-              "Upload to Vault"
-            )}
+          <Input
+            type="password"
+            value={safeCode}
+            onChange={(e) => setSafeCode(e.target.value)}
+            className="text-center text-lg py-6"
+            placeholder="●●●●"
+          />
+          <Button onClick={handleUnlock} className="w-full py-6 text-lg">
+            פתיחת הכספת
           </Button>
+        </div>
+      </div>
+    );
+  }
 
-          {status && (
-            <p className="text-sm text-center mt-2 text-muted-foreground">
-              {status}
-            </p>
-          )}
-        </CardContent>
-      </Card>
+  // Safe is unlocked - Google Drive-like interface
+  return (
+    <div className="w-full max-w-5xl mx-auto py-8 px-4" dir="rtl">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-bold">הכספת הדיגיטלית שלך</h1>
 
-      <div className="flex items-center justify-between px-2">
-        <h3 className="text-xl font-semibold">Uploaded {category}</h3>
-        <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-          className="rounded-md border px-3 py-1 text-sm bg-white shadow"
+        {/* Add button (Google Drive style) */}
+        <Button
+          onClick={() => setShowUploadDialog(true)}
+          className="rounded-full w-14 h-14 bg-gradient-to-br from-rose-400 to-rose-600 hover:from-rose-500 hover:to-rose-700 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center fixed bottom-8 left-8 z-10"
         >
-          <option value="desc">Newest First</option>
-          <option value="asc">Oldest First</option>
-        </select>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="transition-transform duration-200 hover:scale-110"
+          >
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </Button>
       </div>
 
-      <AnimatePresence>
-        {isFetching ? (
-          <motion.div
-            key="loading"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="text-center py-6 text-muted-foreground"
+      {/* Category folders */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
+        {Object.entries(categoryInfo).map(([key, info]) => (
+          <button
+            key={key}
+            onClick={() => setCategory(key)}
+            className={`p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow ${
+              info.color
+            } ${category === key ? "ring-2 ring-rose-500" : ""}`}
           >
-            <Loader2 className="animate-spin inline-block mr-2" /> Loading{" "}
-            {category}…
-          </motion.div>
+            <div className="text-5xl mb-3">{info.icon}</div>
+            <h3 className="text-lg font-medium">{info.label}</h3>
+            <p className="text-sm text-gray-500">
+              {vaultFiles.length > 0 && category === key
+                ? `${vaultFiles.length} קבצים`
+                : "לחצי לצפייה"}
+            </p>
+          </button>
+        ))}
+      </div>
+
+      {/* Current category files */}
+      <div className="bg-white rounded-lg border shadow-sm p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <span>{categoryInfo[category].icon}</span>
+            <span>{categoryInfo[category].label}</span>
+          </h2>
+
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            className="rounded-md border px-3 py-1 text-sm bg-white shadow"
+          >
+            <option value="desc">חדש לישן</option>
+            <option value="asc">ישן לחדש</option>
+          </select>
+        </div>
+
+        {status && (
+          <div className="mb-4 p-2 bg-green-50 border border-green-200 rounded text-center">
+            {status}
+          </div>
+        )}
+
+        {isFetching ? (
+          <div className="text-center py-12 text-gray-500">
+            <Loader2 className="animate-spin inline-block mb-2 h-8 w-8" />
+            <p>טוען {categoryInfo[category].label}...</p>
+          </div>
         ) : sortedFiles.length === 0 ? (
-          <p className="text-center text-sm text-muted-foreground">
-            No files found.
-          </p>
+          <div className="text-center py-16 text-gray-500">
+            <div className="text-6xl mb-4 opacity-30">
+              {categoryInfo[category].icon}
+            </div>
+            <p className="text-lg">אין כרגע קבצים בתיקייה זו</p>
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={() => setShowUploadDialog(true)}
+            >
+              העלאת קבצים
+            </Button>
+          </div>
         ) : (
-          <div className="grid gap-4 grid-cols-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {sortedFiles.map((file) => (
               <motion.div
                 key={file.filename}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3 }}
-                className="text-sm text-center break-words group rounded overflow-hidden border bg-white shadow transition-transform hover:shadow-lg hover:-translate-y-1"
+                className="group rounded overflow-hidden border bg-white shadow transition-transform hover:shadow-md hover:-translate-y-1"
               >
                 {category === "images" ? (
-                  <img
-                    src={file.url}
-                    alt={file.filename}
-                    className="w-full h-40 object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
+                  <div className="aspect-square overflow-hidden">
+                    <img
+                      src={file.url}
+                      alt={file.filename}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  </div>
                 ) : category === "videos" ? (
-                  <video
-                    src={file.url}
-                    controls
-                    className="w-full h-40 object-cover rounded"
-                  />
+                  <div className="aspect-video bg-black">
+                    <video
+                      src={file.url}
+                      controls
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
                 ) : (
-                  <audio src={file.url} controls className="w-full p-1" />
+                  <div className="aspect-square flex items-center justify-center bg-amber-50 p-2">
+                    <audio src={file.url} controls className="w-full" />
+                  </div>
                 )}
-                <p className="truncate mt-1 px-2 pb-2 text-xs text-gray-600">
+                <p className="truncate p-2 text-xs text-gray-600 text-center">
                   {file.filename}
                 </p>
               </motion.div>
             ))}
           </div>
         )}
-      </AnimatePresence>
+      </div>
+
+      {/* Upload dialog (modal) */}
+      {showUploadDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-lg">
+            <CardContent className="p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold">העלאת קבצים חדשים</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowUploadDialog(false)}
+                >
+                  ×
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="category">קטגוריה:</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {Object.entries(categoryInfo).map(([key, info]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setCategory(key)}
+                        className={`p-3 rounded-lg border text-center ${
+                          category === key
+                            ? "bg-rose-100 border-rose-300"
+                            : "bg-white hover:bg-gray-50"
+                        }`}
+                      >
+                        <div className="text-2xl mb-1">{info.icon}</div>
+                        <div className="text-sm">{info.label}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="file">בחירת קבצים:</Label>
+                  <Input
+                    id="file"
+                    type="file"
+                    accept={categoryInfo[category].acceptedTypes}
+                    multiple
+                    onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+                    disabled={loading}
+                    className="text-right"
+                  />
+                  <p className="text-sm text-gray-500">
+                    פורמטים מותרים: {categoryInfo[category].acceptedTypes}
+                  </p>
+                </div>
+
+                {files.length > 0 && (
+                  <div className="bg-gray-50 p-2 rounded border">
+                    <p className="font-medium mb-1">
+                      נבחרו {files.length} קבצים:
+                    </p>
+                    <ul className="text-sm text-gray-600 max-h-24 overflow-y-auto">
+                      {Array.from(files).map((file, i) => (
+                        <li key={i} className="truncate">
+                          {file.name}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowUploadDialog(false)}
+                  >
+                    ביטול
+                  </Button>
+                  <Button
+                    onClick={handleUpload}
+                    disabled={!files.length || loading}
+                  >
+                    {loading ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="animate-spin size-4" /> מעלה...
+                      </span>
+                    ) : (
+                      "העלאה"
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
-
 // Generic placeholder
 const PlaceholderPage = ({ title }: { title: string }) => (
   <div className="mx-auto py-10 text-center text-zinc-600">
