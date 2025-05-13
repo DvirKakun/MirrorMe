@@ -2,8 +2,9 @@ from functools import lru_cache
 import os
 from dotenv import load_dotenv
 
-
-dotenv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+# Get the base directory
+base_dir = os.path.dirname(os.path.dirname(__file__))
+dotenv_path = os.path.join(base_dir, ".env")
 load_dotenv(dotenv_path)
 
 
@@ -25,13 +26,23 @@ class Settings:
 
     # Google Sheets
     GOOGLE_SHEETS_ID = "your-sheet-id"
-    GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
     # Story filters
     MAX_STORIES_TO_RETURN = 5
 
     # Session settings
     SESSION_EXPIRY_DAYS = 30
+
+    # Get Google credentials - now with explicit path reference
+    raw_cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    if raw_cred_path:
+        # Since the file is now in the config folder, this should find it correctly
+        GOOGLE_APPLICATION_CREDENTIALS = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), raw_cred_path)
+        )
+        # Add debugging print to verify the path (you can remove this later)
+    else:
+        GOOGLE_APPLICATION_CREDENTIALS = None
 
 
 @lru_cache()
