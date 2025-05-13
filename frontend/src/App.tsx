@@ -26,8 +26,8 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  Navigate,
   Link,
+  useLocation,
   useNavigate,
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -38,14 +38,12 @@ import { clsx } from "clsx";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import { Card, CardContent } from "./components/ui/card";
-import { ScrollArea } from "./components/ui/scroll-area";
 import { Textarea } from "./components/ui/textarea";
 
 import { Label } from "./components/ui/label";
 
 import { useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Tabs, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Loader2 } from "lucide-react";
 
 import "./App.css";
@@ -144,51 +142,173 @@ export const useAuth = () => {
 // -----------------------------
 // Main Layout
 // -----------------------------
-const Layout = ({ children }: { children: ReactNode }) => (
-  <div className="min-h-screen bg-rose-50 text-zinc-900 flex flex-row-reverse">
-    {/* Right sidebar nav */}
-    <aside className="w-16 md:w-64 bg-white/80 backdrop-blur shadow-sm flex flex-col items-center md:items-end py-6 sticky top-0 h-screen z-20">
-      <Link
-        to="/"
-        className="font-bold text-lg tracking-tight mb-8 w-full text-center md:px-6"
-      >
-        MirrorMe
-      </Link>
-      <nav className="flex flex-col items-center md:items-end space-y-6 w-full md:px-6">
-        <VerticalNavLink to="/" label="צ'אט" icon="💬" />
-        <VerticalNavLink to="/blog" label="בלוג" icon="📝" />
-        <VerticalNavLink to="/info" label="כל מה שאתה צריכה לדעת" icon="ℹ️" />
-        <VerticalNavLink to="/stories" label="הסיפור שלי" icon="📚" />
-        <VerticalNavLink to="/safe" label="הכספת" icon="🔒" />
-      </nav>
-    </aside>
+const Layout = ({ children }: { children: ReactNode }) => {
+  // Get current location for active state
+  const location = useLocation();
+  const currentPath = location.pathname;
 
-    {/* Main body */}
-    <main className="relative flex-1 flex flex-col items-center justify-start mx-auto w-full max-w-7xl px-4 pb-48 pt-6 overflow-x-hidden">
-      {children}
-      {/* Floating helpers */}
-      <ButterflyButton />
-      <SOSButton />
-    </main>
-  </div>
-);
+  return (
+    <div className="min-h-screen bg-white text-zinc-900 flex flex-col">
+      {/* Top header with MirrorMe title */}
+      <header className="px-24 py-4 border-b shadow-sm bg-white flex items-center">
+        <h1 className="font-bold text-xl tracking-tight ml-6">MirrorMe</h1>
+      </header>
 
-const VerticalNavLink = ({
+      <div className="flex flex-1">
+        {/* Left side navigation */}
+        <aside className="w-16 md:w-24 bg-white border-r flex flex-col items-center py-20 space-y-8">
+          <NavButton
+            to="/"
+            label="צ'אט"
+            icon={
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M5.348 2.521C7.71613 2.1734 10.1065 1.99927 12.5 2C14.93 2 17.317 2.178 19.652 2.52C21.63 2.812 23 4.544 23 6.49V12.51C23 14.456 21.63 16.188 19.652 16.48C18.4983 16.6491 17.3389 16.7768 16.176 16.863C16.1168 16.8669 16.0593 16.8842 16.0079 16.9137C15.9564 16.9431 15.9123 16.984 15.879 17.033L13.124 21.166C13.0555 21.2687 12.9627 21.3529 12.8539 21.4112C12.745 21.4694 12.6235 21.4999 12.5 21.4999C12.3765 21.4999 12.255 21.4694 12.1461 21.4112C12.0373 21.3529 11.9445 21.2687 11.876 21.166L9.121 17.033C9.08768 16.984 9.04361 16.9431 8.99214 16.9137C8.94068 16.8842 8.88317 16.8669 8.824 16.863C7.66113 16.7765 6.50172 16.6484 5.348 16.479C3.37 16.189 2 14.455 2 12.509V6.491C2 4.545 3.37 2.811 5.348 2.521ZM7.25 8C7.25 7.80109 7.32902 7.61032 7.46967 7.46967C7.61032 7.32902 7.80109 7.25 8 7.25H17C17.1989 7.25 17.3897 7.32902 17.5303 7.46967C17.671 7.61032 17.75 7.80109 17.75 8C17.75 8.19891 17.671 8.38968 17.5303 8.53033C17.3897 8.67098 17.1989 8.75 17 8.75H8C7.80109 8.75 7.61032 8.67098 7.46967 8.53033C7.32902 8.38968 7.25 8.19891 7.25 8ZM8 10.25C7.80109 10.25 7.61032 10.329 7.46967 10.4697C7.32902 10.6103 7.25 10.8011 7.25 11C7.25 11.1989 7.32902 11.3897 7.46967 11.5303C7.61032 11.671 7.80109 11.75 8 11.75H12.5C12.6989 11.75 12.8897 11.671 13.0303 11.5303C13.171 11.3897 13.25 11.1989 13.25 11C13.25 10.8011 13.171 10.6103 13.0303 10.4697C12.8897 10.329 12.6989 10.25 12.5 10.25H8Z"
+                  fill="currentColor"
+                />
+              </svg>
+            }
+            isActive={currentPath === "/"}
+          />
+          <NavButton
+            to="/safe"
+            label="הכספת"
+            icon={
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16.5 10.5V6.75C16.5 5.55653 16.0259 4.41193 15.182 3.56802C14.3381 2.72411 13.1935 2.25 12 2.25C10.8065 2.25 9.66193 2.72411 8.81802 3.56802C7.97411 4.41193 7.5 5.55653 7.5 6.75V10.5M6.75 21.75H17.25C17.8467 21.75 18.419 21.5129 18.841 21.091C19.2629 20.669 19.5 20.0967 19.5 19.5V12.75C19.5 12.1533 19.2629 11.581 18.841 11.159C18.419 10.7371 17.8467 10.5 17.25 10.5H6.75C6.15326 10.5 5.58097 10.7371 5.15901 11.159C4.73705 11.581 4.5 12.1533 4.5 12.75V19.5C4.5 20.0967 4.73705 20.669 5.15901 21.091C5.58097 21.5129 6.15326 21.75 6.75 21.75Z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            }
+            isActive={currentPath === "/safe"}
+          />
+          <NavButton
+            to="/blog"
+            label="קהילה"
+            icon={
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M20.25 8.511C21.134 8.795 21.75 9.639 21.75 10.608V14.894C21.75 16.03 20.903 16.994 19.77 17.087C19.43 17.114 19.09 17.139 18.75 17.159V20.25L15.75 17.25C14.396 17.25 13.056 17.195 11.73 17.087C11.4413 17.0637 11.1605 16.9813 10.905 16.845M20.25 8.511C20.0955 8.46127 19.9358 8.42939 19.774 8.416C17.0959 8.19368 14.4041 8.19368 11.726 8.416C10.595 8.51 9.75 9.473 9.75 10.608V14.894C9.75 15.731 10.21 16.474 10.905 16.845M20.25 8.511V6.637C20.25 5.016 19.098 3.611 17.49 3.402C15.4208 3.13379 13.3365 2.99951 11.25 3C9.135 3 7.052 3.137 5.01 3.402C3.402 3.611 2.25 5.016 2.25 6.637V12.863C2.25 14.484 3.402 15.889 5.01 16.098C5.587 16.173 6.167 16.238 6.75 16.292V21L10.905 16.845"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            }
+            isActive={currentPath === "/blog"}
+          />
+          <NavButton
+            to="/stories"
+            label="סיפורים אישיים"
+            icon={
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16.862 4.487L18.549 2.799C18.9007 2.44733 19.3777 2.24976 19.875 2.24976C20.3723 2.24976 20.8493 2.44733 21.201 2.799C21.5527 3.15068 21.7502 3.62766 21.7502 4.125C21.7502 4.62235 21.5527 5.09933 21.201 5.451L10.582 16.07C10.0533 16.5984 9.40137 16.9867 8.685 17.2L6 18L6.8 15.315C7.01328 14.5986 7.40163 13.9467 7.93 13.418L16.862 4.487ZM16.862 4.487L19.5 7.125M18 14V18.75C18 19.3467 17.7629 19.919 17.341 20.341C16.919 20.763 16.3467 21 15.75 21H5.25C4.65326 21 4.08097 20.763 3.65901 20.341C3.23705 19.919 3 19.3467 3 18.75V8.25C3 7.65327 3.23705 7.08097 3.65901 6.65901C4.08097 6.23706 4.65326 6 5.25 6H10"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            }
+            isActive={currentPath === "/stories"}
+          />
+          <NavButton
+            to="/info"
+            label="לקריאה נוספת"
+            icon={
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M17.593 3.322C18.693 3.45 19.5 4.399 19.5 5.507V21L12 17.25L4.5 21V5.507C4.5 4.399 5.306 3.45 6.407 3.322C10.1232 2.89063 13.8768 2.89063 17.593 3.322Z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            }
+            isActive={currentPath === "/info"}
+          />
+        </aside>
+
+        {/* Main content - still RTL */}
+        <main
+          className="relative flex-1 flex flex-col items-center justify-start mx-auto w-full max-w-7xl pb-12 pt-6"
+          dir="rtl"
+        >
+          {children}
+          {/* Floating helpers */}
+          <ButterflyButton />
+          <SOSButton />
+        </main>
+      </div>
+    </div>
+  );
+};
+
+// Updated NavButton with SVG support and active state
+const NavButton = ({
   to,
   label,
   icon,
+  isActive,
 }: {
   to: string;
   label: string;
-  icon: string;
+  icon: ReactNode;
+  isActive: boolean;
 }) => (
   <Link
     to={to}
-    className="text-sm font-medium opacity-80 hover:opacity-100 transition-opacity flex flex-col md:flex-row items-center md:justify-end w-full gap-2 py-2 text-center md:text-right"
+    className={`flex flex-col items-center text-center w-full gap-1 px-1 py-2 transition-colors relative ${
+      isActive
+        ? "text-[#4762FF] border-l-4 border-[#4762FF]"
+        : "text-gray-600 hover:text-[#4762FF]"
+    }`}
   >
-    <span className="block text-xl mb-1 md:mb-0 mx-auto md:mx-0">{icon}</span>
-    <span className="hidden md:block">{label}</span>
-    <span className="block md:hidden text-xs w-full">{label}</span>
+    <div
+      className={`text-2xl ${isActive ? "text-[#4762FF]" : "text-gray-600"}`}
+    >
+      {icon}
+    </div>
+    <span className="text-[10px] leading-tight">{label}</span>
   </Link>
 );
 
@@ -200,62 +320,36 @@ interface ChatMessage {
   content: string;
 }
 const ChatPage = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: "assistant",
-      content: `היי, טוב שבאת.
-לפעמים משהו קטן נוגע עמוק — גם אם את לא לגמרי יודעת למה.
-
-אם יש לך משהו על הלב — את מוזמנת לכתוב.
-לא כדי להסביר, רק כדי לשחרר.`,
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-<<<<<<< HEAD
-  // const sessionId = useSession();
-  const [session_id, setSession_id] = useState("");
-=======
->>>>>>> main
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [chatStarted, setChatStarted] = useState(false);
+
   const [sessionId, setSessionId] = useState<string | null>(() => {
-    // Initialize from localStorage on component mount
     return localStorage.getItem("chatSessionId");
   });
 
   const sendMessage = async () => {
     if (!input.trim()) return;
+    if (!chatStarted) setChatStarted(true);
+
     const userMsg: ChatMessage = { role: "user", content: input };
     setMessages((m) => [...m, userMsg]);
     setInput("");
     setLoading(true);
 
-    try {
+  try {
       const res = await fetch("http://localhost:8000/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: input,
-<<<<<<< HEAD
-          session_id: session_id ?? "",
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: input, session_id: sessionId || "" }),
       });
       const data = await res.json();
-      setSession_id(data.session_id);
-=======
-          session_id: sessionId || "",
-        }),
-      });
-      const data = await res.json();
-
       if (data.session_id) {
         setSessionId(data.session_id);
         localStorage.setItem("chatSessionId", data.session_id);
       }
-
->>>>>>> main
       setMessages((m) => [...m, { role: "assistant", content: data.response }]);
     } catch (err) {
       console.error(err);
@@ -264,47 +358,72 @@ const ChatPage = () => {
     }
   };
 
-  // Only scroll to bottom when messages change and there's more than the initial message
+
+  const handleFileUpload = () => console.log("File upload clicked");
+
   useEffect(() => {
     if (messages.length > 1) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
   return (
     <section
-      className="flex flex-col w-full md:w-4/5 lg:w-3/4 pt-10 pb-4 mt-4 h-[700px]"
+      className="flex flex-col w-full max-w-[1064px] h-[518px] pt-10 pb-4 mt-4 mx-auto"
       dir="rtl"
     >
-      {/* Simplified container */}
-      <div className="flex-1 rounded-lg border bg-white/90 backdrop-blur overflow-y-auto h-[450px] flex flex-col">
-        {/* Message container with consistent padding */}
-        <div className="p-6 flex-1 flex flex-col">
-          {/* First message always visible at the top */}
-          {messages.length > 0 && messages[0].role === "assistant" && (
-            <Card className="max-w-[85%] ml-auto bg-white shadow-sm mb-6">
-              <CardContent className="p-4 whitespace-pre-wrap text-right hebrew-text text-base">
-                {messages[0].content}
-              </CardContent>
-            </Card>
-          )}
+      {!chatStarted && (
+        <div className="text-right max-w-2xl mb-8 px-4 text-[#333] font-['Rubik'] leading-[125%]">
+          <h2 className="text-2xl font-bold">היי, טוב שבאת.</h2>
+          <p className="mb-2 text-lg">
+            לפעמים <span className="text-[#4762FF] font-medium">משהו קטן</span>{" "}
+            נוגע עמוק —<br />
+            גם אם את לא לגמרי יודעת למה.
+          </p>
+          <p>
+            <span className="text-[#4762FF] text-lg font-medium">
+              אם יש לך משהו על הלב —
+            </span>
+            <br />
+            את מוזמנת לכתוב.
+            <br />
+            לא כדי להסביר, רק כדי לשחרר.
+          </p>
+        </div>
+      )}
 
-          {/* Remaining messages (if any) */}
-          {messages.slice(1).map((m, i) => (
+      <div className="flex-1 rounded-lg overflow-y-auto flex flex-col mb-4">
+        <div className="p-6 flex-1 flex flex-col">
+          {messages.slice(chatStarted ? 0 : 1).map((m, i) => (
             <Card
-              key={i + 1}
-              className={clsx("max-w-[85%] mb-6", {
-                "mr-auto bg-rose-100 shadow-sm": m.role === "user",
-                "ml-auto bg-white shadow-sm": m.role === "assistant",
+              key={i}
+              className={clsx("max-w-[85%] mb-6 text-right break-words", {
+                "ml-auto text-[#F4F6FA] shadow-sm": m.role === "user",
+                "ml-auto bg-transparent shadow-none border-none":
+                  m.role === "assistant",
               })}
             >
-              <CardContent className="p-4 whitespace-pre-wrap text-right hebrew-text text-base">
-                {m.content}
+              <CardContent
+                className="p-4 text-base leading-relaxed font-['Rubik'] text-zinc-800 rtl whitespace-pre-wrap"
+                dir="rtl"
+              >
+                <div
+                  className="hebrew-text"
+                  style={{ direction: "rtl", unicodeBidi: "plaintext" }}
+                >
+                  {m.content}
+                </div>
               </CardContent>
             </Card>
           ))}
 
-          {/* Loading indicator */}
           {loading && (
             <Card className="max-w-[85%] bg-white ml-auto shadow-sm mb-6">
               <CardContent className="p-4 italic text-gray-500 text-right">
@@ -313,24 +432,66 @@ const ChatPage = () => {
             </Card>
           )}
 
-          {/* Reference for auto-scrolling */}
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Input area */}
-      <div className="mt-4 flex gap-3">
-        <Textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          className="flex-1 resize-none text-right text-base p-2.5 min-h-[60px]"
-          rows={2}
-          placeholder="כתבי את ההודעה שלך..."
-        />
+      <div className="flex justify-center items-center w-full">
+        <div className="bg-[#ededed] rounded-[32px] p-[24px] w-[848px] h-[192px] shadow-md relative">
+          <Textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="w-full resize-none text-right text-base border-none focus:border-none focus:ring-0 bg-transparent placeholder-[#757575] shadow-none outline-none focus:outline-none h-[100px] focus:shadow-none !ring-0 !ring-offset-0 font-['Rubik']"
+            placeholder="כתבי כל דבר..."
+            rows={4}
+            dir="rtl"
+          />
 
-        <Button onClick={sendMessage} className="px-5 py-1.5 h-auto">
-          שלח
-        </Button>
+          <div className="flex items-center justify-between absolute bottom-5 left-5 right-5">
+            <button
+              onClick={handleFileUpload}
+              className="text-[#4762FF] border border-[#4762FF] rounded-full flex items-center gap-2 py-[12px] pr-[16px] pl-[24px] hover:bg-blue-50 transition-colors"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 14 14"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M1 10V11.5C1 11.8978 1.15804 12.2794 1.43934 12.5607C1.72064 12.842 2.10218 13 2.5 13H11.5C11.8978 13 12.2794 12.842 12.5607 12.5607C12.842 12.2794 13 11.8978 13 11.5V10M4 4L7 1M7 1L10 4M7 1V10"
+                  stroke="#4762FF"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span className="text-xs font-medium">העלאת קבצים</span>
+            </button>
+
+            <button
+              onClick={sendMessage}
+              className="bg-[#4762FF] text-white rounded-full flex items-center justify-center w-12 h-12"
+            >
+              <svg
+                className="w-10 h-10"
+                viewBox="0 0 40 40"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M24 20L25.8207 25.9167C21.4654 24.65 17.3584 22.649 13.6767 20C17.3582 17.351 21.465 15.3501 25.82 14.0834L24 20ZM24 20H19"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -572,6 +733,7 @@ const SafePage = () => {
   const [vaultFiles, setVaultFiles] = useState<VaultFile[]>([]);
   const [sort, setSort] = useState("desc");
   const [isFetching, setIsFetching] = useState(false);
+  const navigate = useNavigate();
 
   // Category info with Hebrew labels
   interface CategoryInfo {
@@ -667,6 +829,10 @@ const SafePage = () => {
     }
   };
 
+  const handleLogin = () => {
+    navigate("/login");
+  };
+
   const sortedFiles = useMemo(() => {
     const sorted = [...vaultFiles];
     sorted.sort((a, b) => {
@@ -680,14 +846,29 @@ const SafePage = () => {
   // Not authenticated view
   if (!token) {
     return (
-      <div className="w-full max-w-lg mx-auto py-16 text-center" dir="rtl">
-        <img
-          src="/images/locked-safe.png" // Replace with your safe image
-          alt="כספת נעולה"
-          className="w-64 h-64 mx-auto mb-8 rounded-lg shadow-md"
-        />
-        <h1 className="text-2xl font-bold mb-4">הכספת הדיגיטלית</h1>
-        <p className="text-lg mb-8">כדי לגשת לכספת, עליך להתחבר למערכת.</p>
+      <div
+        className="flex flex-col items-center justify-center min-h-[80vh] p-6"
+        dir="rtl"
+      >
+        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-lg w-full flex flex-col items-center">
+          <img
+            src="/images/locked-safe.png" // Update with the actual image path
+            alt="כספת נעולה"
+            className="w-72 h-72 mx-auto mb-6 object-contain"
+          />
+          <h1 className="text-2xl font-bold text-[#333333] mb-3 text-center">
+            ברוכה הבאה אל הכספת
+          </h1>
+          <p className="text-[#333333] mb-8 text-center max-w-md">
+            כאן תוכלי להעלות איזה קבצים שתרצי הכל מוגן באבטחה
+          </p>
+          <Button
+            onClick={handleLogin}
+            className="bg-[#4762FF] text-white hover:bg-blue-600 rounded-full px-6 py-3 text-base font-medium"
+          >
+            התחברות
+          </Button>
+        </div>
       </div>
     );
   }
@@ -695,32 +876,42 @@ const SafePage = () => {
   // Authenticated but need safe code
   if (!isUnlocked) {
     return (
-      <div className="w-full max-w-lg mx-auto py-16 text-center" dir="rtl">
-        <img
-          src="/images/safe-door.png" // Replace with your safe image
-          alt="דלת כספת"
-          className="w-80 h-80 mx-auto mb-8 rounded-lg shadow-md"
-        />
-        <h1 className="text-2xl font-bold mb-4">המקום הבטוח שלך</h1>
-        <p className="text-lg mb-8">
-          כאן תוכלי לשמור את כל התיעוד החשוב בצורה מאובטחת ופרטית. אף אחד מלבדך
-          לא יוכל לראות את התכנים כאן.
-        </p>
-
-        <div className="max-w-xs mx-auto space-y-4">
-          <div className="text-lg font-medium mb-2">
-            אנא הזיני את קוד הכספת שלך:
-          </div>
-          <Input
-            type="password"
-            value={safeCode}
-            onChange={(e) => setSafeCode(e.target.value)}
-            className="text-center text-lg py-6"
-            placeholder="●●●●"
+      <div
+        className="flex flex-col items-center justify-center min-h-[80vh] p-6"
+        dir="rtl"
+      >
+        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-lg w-full flex flex-col items-center">
+          <img
+            src="/images/safe-door.jpg" // Update with the actual image path
+            alt="דלת כספת"
+            className="w-72 h-72 mx-auto mb-6 object-contain"
           />
-          <Button onClick={handleUnlock} className="w-full py-6 text-lg">
-            פתיחת הכספת
-          </Button>
+          <h1 className="text-2xl font-bold text-[#333333] mb-3 text-center">
+            ברוכה הבאה אל הכספת
+          </h1>
+          <p className="text-[#333333] mb-8 text-center max-w-md">
+            כאן תוכלי להעלות איזה קבצים שתרצי הכל מוגן באבטחה
+          </p>
+
+          <div className="w-full max-w-md space-y-4">
+            <label className="block text-[#333333] text-base font-medium mb-2 text-right">
+              אנא הזיני את קוד הכספת שלך:
+            </label>
+            <Input
+              type="password"
+              value={safeCode}
+              onChange={(e) => setSafeCode(e.target.value)}
+              className="w-full text-center text-lg py-6 rounded-lg border-gray-300 focus:border-[#4762FF] focus:ring focus:ring-[#4762FF] focus:ring-opacity-20"
+              placeholder="●●●●"
+              maxLength={4}
+            />
+            <Button
+              onClick={handleUnlock}
+              className="w-full bg-[#4762FF] text-white hover:bg-blue-600 rounded-full py-3 mt-4 text-base font-medium"
+            >
+              פתיחת הכספת
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -730,29 +921,61 @@ const SafePage = () => {
   return (
     <div className="w-full max-w-5xl mx-auto py-8 px-4" dir="rtl">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold">הכספת הדיגיטלית שלך</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-[#333333]">
+            הכספת הדיגיטלית שלך
+          </h1>
+          <p className="text-[#666666] mt-2">
+            כאן תוכלי להעלות איזה קבצים שתרצי הכל מוגן באבטחה
+          </p>
+        </div>
 
-        {/* Add button (Google Drive style) */}
-        <Button
-          onClick={() => setShowUploadDialog(true)}
-          className="rounded-full w-14 h-14 bg-gradient-to-br from-rose-400 to-rose-600 hover:from-rose-500 hover:to-rose-700 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center fixed bottom-8 left-8 z-10"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="transition-transform duration-200 hover:scale-110"
+        {/* Share button */}
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            className="text-[#4762FF] border-[#4762FF] rounded-full px-4 py-2 text-sm flex items-center gap-2"
           >
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-        </Button>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M7 11L12 6M12 6L17 11M12 6V18"
+                stroke="#4762FF"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            שיתוף הכספת שלי
+          </Button>
+
+          {/* Add button (Google Drive style) */}
+          <Button
+            onClick={() => setShowUploadDialog(true)}
+            className="bg-[#4762FF] text-white rounded-full px-4 py-2 text-sm flex items-center gap-2"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            חדש
+          </Button>
+        </div>
       </div>
 
       {/* Category folders */}
@@ -763,7 +986,7 @@ const SafePage = () => {
             onClick={() => setCategory(key)}
             className={`p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow ${
               info.color
-            } ${category === key ? "ring-2 ring-rose-500" : ""}`}
+            } ${category === key ? "ring-2 ring-[#4762FF]" : ""}`}
           >
             <div className="text-5xl mb-3">{info.icon}</div>
             <h3 className="text-lg font-medium">{info.label}</h3>
@@ -813,7 +1036,7 @@ const SafePage = () => {
             <p className="text-lg">אין כרגע קבצים בתיקייה זו</p>
             <Button
               variant="outline"
-              className="mt-4"
+              className="mt-4 border-[#4762FF] text-[#4762FF]"
               onClick={() => setShowUploadDialog(true)}
             >
               העלאת קבצים
@@ -862,7 +1085,7 @@ const SafePage = () => {
       {/* Upload dialog (modal) */}
       {showUploadDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-lg">
+          <Card className="w-full max-w-lg rounded-2xl overflow-hidden">
             <CardContent className="p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-bold">העלאת קבצים חדשים</h3>
@@ -877,7 +1100,12 @@ const SafePage = () => {
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="category">קטגוריה:</Label>
+                  <Label
+                    htmlFor="category"
+                    className="text-[#333333] font-medium"
+                  >
+                    קטגוריה:
+                  </Label>
                   <div className="grid grid-cols-3 gap-2">
                     {Object.entries(categoryInfo).map(([key, info]) => (
                       <button
@@ -886,7 +1114,7 @@ const SafePage = () => {
                         onClick={() => setCategory(key)}
                         className={`p-3 rounded-lg border text-center ${
                           category === key
-                            ? "bg-rose-100 border-rose-300"
+                            ? "bg-blue-50 border-[#4762FF]"
                             : "bg-white hover:bg-gray-50"
                         }`}
                       >
@@ -898,7 +1126,9 @@ const SafePage = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="file">בחירת קבצים:</Label>
+                  <Label htmlFor="file" className="text-[#333333] font-medium">
+                    בחירת קבצים:
+                  </Label>
                   <Input
                     id="file"
                     type="file"
@@ -932,12 +1162,14 @@ const SafePage = () => {
                   <Button
                     variant="outline"
                     onClick={() => setShowUploadDialog(false)}
+                    className="border-[#4762FF] text-[#4762FF]"
                   >
                     ביטול
                   </Button>
                   <Button
                     onClick={handleUpload}
                     disabled={!files.length || loading}
+                    className="bg-[#4762FF] text-white"
                   >
                     {loading ? (
                       <span className="flex items-center gap-2">
@@ -1030,7 +1262,7 @@ export default function App() {
         <Router>
           <Layout>
             {/* Testing bar for easy login/logout */}
-            <div className="fixed top-4 left-4 z-50 bg-white/90 rounded-md shadow p-2 flex gap-2">
+            <div className="fixed bottom-4 left-4 z-50 bg-white/90 rounded-md shadow p-2 flex gap-2">
               {token ? (
                 <Button size="sm" variant="outline" onClick={logout}>
                   התנתק (בדיקה)
