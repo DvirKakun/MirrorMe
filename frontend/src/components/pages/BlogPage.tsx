@@ -95,15 +95,18 @@ export const BlogPage = () => {
           <span className="text-gray-800">MirrorMe</span>
         </h2>
 
-        {token && (
+        <div className="relative group">
           <motion.button
-            onClick={() => setShowNewPostForm(!showNewPostForm)}
-            className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-md text-white text-sm transition-all"
+            onClick={() => token && setShowNewPostForm(!showNewPostForm)}
+            className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-md text-white text-sm transition-all ${
+              !token ? "opacity-60 cursor-not-allowed" : ""
+            }`}
             style={{ backgroundColor: "hsl(var(--main-color))" }}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
+            whileHover={{ scale: token ? 1.03 : 1 }}
+            whileTap={{ scale: token ? 0.97 : 1 }}
+            disabled={!token}
           >
-            {showNewPostForm ? (
+            {showNewPostForm && token ? (
               <>
                 <X className="w-4 h-4" />
                 <span>סגור</span>
@@ -115,7 +118,14 @@ export const BlogPage = () => {
               </>
             )}
           </motion.button>
-        )}
+
+          {!token && (
+            <div className="absolute top-1/2 right-full -translate-y-1/2 mr-3 w-48 bg-gray-800 text-white text-xs rounded p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 text-right">
+              עלייך להתחבר דרך הצ'אט כדי לשתף סיפור
+              <div className="absolute top-1/2 right-0 -translate-y-1/2 -mr-1 border-t-4 border-b-4 border-l-4 border-transparent border-l-gray-800"></div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Minimal filters with added padding */}
@@ -283,13 +293,6 @@ export const BlogPage = () => {
       {filteredPosts.length === 0 && (
         <div className="text-center py-12 px-6 bg-gray-50 rounded-md">
           <p className="text-sm text-gray-500">אין פוסטים בקטגוריה זו</p>
-        </div>
-      )}
-
-      {/* Login prompt */}
-      {!token && (
-        <div className="text-center mt-6 border border-gray-200 rounded-md p-6 bg-gray-50">
-          <p className="text-sm text-gray-700 mb-3">התחברי כדי להשתתף בשיחה</p>
         </div>
       )}
     </div>

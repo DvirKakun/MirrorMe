@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import type { VaultFile } from "../../types/index";
+import type { CategoryInfo, VaultFile } from "../../types/index";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Loader2 } from "lucide-react";
@@ -20,14 +20,6 @@ export const SafePage = () => {
   const [vaultFiles, setVaultFiles] = useState<VaultFile[]>([]);
   const [sort, setSort] = useState("desc");
   const [isFetching, setIsFetching] = useState(false);
-
-  // Category info with Hebrew labels
-  interface CategoryInfo {
-    label: string;
-    icon: string;
-    acceptedTypes: string;
-    color: string;
-  }
 
   // Define the type for the entire category information object
   type CategoriesMap = {
