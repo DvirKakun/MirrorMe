@@ -12,6 +12,7 @@ from typing import Optional, List
 import uuid
 from mongoengine import connect, disconnect
 from backend.config.settings import get_settings
+from backend.db.models.conversation import Conversation
 from backend.db.mongodb import close_mongo_connection, connect_to_mongo
 from backend.services.chatbot_service import ChatbotService
 
@@ -54,7 +55,7 @@ chatbot_service = ChatbotService()
 # Request and response models
 class MessageRequest(BaseModel):
     message: str
-    session_id: Optional[str] = None
+    conversation_id: Optional[str] = None
     entry_source: Optional[str] = None
     entry_statement: Optional[str] = None
 
@@ -72,6 +73,10 @@ class ConversationSummary(BaseModel):
     updated_at: datetime
     message_count: int
 
+class ConversationUpdateRequest(BaseModel):
+    file_type: Literal["images", "videos", "records"]  # Type of files uploaded
+    amount: int  # Number of files uploaded
+    assistant_message: str  # Bot's response about the file
 
 @app.get("/")
 async def root():
@@ -84,7 +89,7 @@ async def chat(request: MessageRequest):
     try:
         # Process the message
         response = chatbot_service.process_message(
-            session_id=request.session_id,
+            conversation_id=request.conversation_id,
             user_message=request.message,
             entry_source=request.entry_source,
             entry_statement=request.entry_statement,
@@ -132,8 +137,6 @@ async def get_conversations(limit: int = 10):
 async def get_conversation(conversation_id: str):
     """Get details of a specific conversation."""
     try:
-        from backend.db.models.conversation import Conversation
-
         conversation = Conversation.objects(id=conversation_id).first()
         if not conversation:
             raise HTTPException(status_code=404, detail="Conversation not found")
@@ -264,3 +267,40 @@ async def login(data: UserLogin):
     except Exception as e:
         raise HTTPException(status_code=401, detail=str(e))
 
+@app.put("/conversation/{session_id}")
+async def update_conversation(session_id: str, data: ConversationUpdateRequest):
+    """
+    Update a conversation with file upload context and assistant messages.
+    
+    This endpoint is used primarily when users upload files to add context
+    so the AI knows about these uploads in subsequent interactions.
+    """
+    try:
+        # Generate appropriate system message based on file type and amount
+        file_descriptions = {
+            "images": "image" if data.amount == 1 else "images",
+            "videos": "video" if data.amount == 1 else "videos",
+            "records": "audio recording" if data.amount == 1 else "audio recordings"
+        }
+        
+        # Create system message
+        system_message = f"[SYSTEM: User has uploaded {data.amount} {file_descriptions[data.file_type]} to their vault. " \
+                         f"This content is now available for reference in the conversation.]"
+        
+        # Update the conversation with system and assistant messages
+        updated_conversation = chatbot_service.update_conversation_context(
+            session_id=session_id,
+            system_message=system_message,
+            assistant_message=data.assistant_message,
+        )
+
+        return {
+            "id": str(updated_conversation.id),
+            "session_id": updated_conversation.session_id,
+            "updated_at": updated_conversation.updated_at,
+            "message_count": len(updated_conversation.messages),
+            "status": "success"
+        }
+    except Exception as e:
+        print(f"Error updating conversation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

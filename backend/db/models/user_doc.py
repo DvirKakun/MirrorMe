@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 class User(Document):
     """Registered user schema for authentication and tracking."""
-    
+    name = StringField(required=True)
     email = EmailField(required=True, unique=True)
     hashed_password = StringField(required=True)
     

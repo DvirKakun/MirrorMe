@@ -207,3 +207,33 @@ class ChatbotService:
             Conversation.objects(**query).order_by("-updated_at").limit(limit)
         )
         return conversations
+
+    def update_conversation_context(self, session_id, system_message, assistant_message):
+        """
+        Update a conversation with context about uploaded files and an assistant response.
+        
+        Args:
+            conversation_id: The ID of the conversation to update
+            system_message: System message providing context about the uploaded file
+            assistant_message: Assistant message to add as if the bot responded to the upload
+            
+        Returns:
+            Updated conversation object
+        """
+        # Find the conversation
+        conversation = Conversation.objects(session_id=session_id).first()
+        if not conversation:
+            raise ValueError(f"Conversation with session ID {session_id} not found")
+        
+        # Add system message for context
+        if system_message:
+            conversation.add_message(system_message, "system")
+        
+        # Add assistant message (e.g., confirmation about the file)
+        if assistant_message:
+            conversation.add_message(assistant_message, "assistant")
+        
+        # Save the updated conversation
+        conversation.save()
+        
+        return conversation

@@ -4,6 +4,8 @@ from typing import Dict, Any, Optional, List
 from langchain.tools import Tool
 import re
 
+from backend.services.authentication_service import login_user, register_user
+
 class LoginInput(BaseModel):
     """Input for login tool."""
     email: str = Field(..., description="User's email")
@@ -76,6 +78,14 @@ class LoginTool:
                 return response
                 
             # Actual login logic (placeholder)
+            try:
+                token = login_user(email=email, password=password)
+            except Exception as e:
+                errors.append(f"Login failed: {str(e)}")
+                response["message"] = "Login failed due to server error"
+                response["errors"] = errors
+                return response
+            
             response["success"] = True
             response["message"] = f"Login successful for: {email}"
             return response
@@ -181,6 +191,14 @@ class RegisterTool:
                 return response
                 
             # Actual registration logic (placeholder)
+            try:
+                register_user(email=email, password=password, name=name)
+            except Exception as e:
+                errors.append(f"Registration failed: {str(e)}")
+                response["message"] = "Registration failed due to server error"
+                response["errors"] = errors
+                return response
+            
             response["success"] = True
             response["message"] = f"Registration successful for: {name} ({email})"
             return response
