@@ -30,6 +30,7 @@ export interface NavButtonProps {
   to: string;
   label: string;
   icon: ReactNode;
+  activeIcon: ReactNode;
   isActive: boolean;
 }
 
