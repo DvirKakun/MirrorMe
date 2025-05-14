@@ -136,14 +136,15 @@ export const SafePage = () => {
           {/* Right side - Text and login message */}
           <div className="w-full md:w-3/5 space-y-4 pt-0 md:pt-8 order-2 md:order-1">
             <h1 className="text-2xl md:text-3xl font-bold text-[#333333] mb-2 text-center md:text-right">
-              ברוכה הבאה אל <span className="text-[#4762FF]">הכספת</span>
+              ברוכה הבאה אל <span className="text-main">הכספת</span>
             </h1>
 
             <p className="text-base md:text-lg text-[#333333] mb-4 md:mb-6 text-center md:text-right">
               כאן תוכלי להעלות איזה קבצים שתרצי הכל מוגן באבטחה
             </p>
 
-            <div className="mt-4 md:mt-10 space-y-4 text-center md:text-right">
+            {/* Reduced the margin-top here from mt-4 md:mt-10 to mt-2 md:mt-4 */}
+            <div className="mt-2 md:mt-4 space-y-4 text-center md:text-right">
               <p className="text-[#666666] font-medium">
                 כדי לגשת לכספת, עליך להתחבר למערכת תחילה.
               </p>
@@ -174,7 +175,7 @@ export const SafePage = () => {
           {/* Right side - Text and PIN input */}
           <div className="w-full md:w-3/5 space-y-4 pt-0 md:pt-8 order-2 md:order-1">
             <h1 className="text-2xl md:text-3xl font-bold text-[#333333] mb-2 text-center md:text-right">
-              ברוכה הבאה אל <span className="text-[#4762FF]">הכספת</span>
+              ברוכה הבאה אל <span className="text-main">הכספת</span>
             </h1>
 
             <p className="text-base md:text-lg text-[#333333] mb-4 md:mb-6 text-center md:text-right">
@@ -190,14 +191,14 @@ export const SafePage = () => {
                 type="password"
                 value={safeCode}
                 onChange={(e) => setSafeCode(e.target.value)}
-                className="w-full text-center text-lg py-3 md:py-4 rounded-lg border-gray-300 focus:border-[#4762FF] focus:ring focus:ring-[#4762FF] focus:ring-opacity-20"
+                className="w-full text-center text-lg py-3 md:py-4 rounded-lg border-gray-300 focus:border-main focus:ring focus:ring-main focus:ring-opacity-20"
                 placeholder="●●●●"
                 maxLength={4}
               />
 
               <Button
                 onClick={handleUnlock}
-                className="w-full bg-[#4762FF] text-white hover:bg-blue-600 rounded-full py-3 text-base font-medium mt-2"
+                className="w-full bg-main text-white hover:bg-blue-600 rounded-full py-3 text-base font-medium mt-2"
               >
                 פתיחת הכספת
               </Button>
@@ -236,7 +237,7 @@ export const SafePage = () => {
         <div className="flex gap-3 justify-center sm:justify-start mt-3 sm:mt-0">
           <Button
             variant="outline"
-            className="text-[#4762FF] border-[#4762FF] rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm flex items-center gap-1 sm:gap-2"
+            className="text-main border-main rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm flex items-center gap-1 sm:gap-2"
           >
             <svg
               width="16"
@@ -248,7 +249,7 @@ export const SafePage = () => {
             >
               <path
                 d="M7 11L12 6M12 6L17 11M12 6V18"
-                stroke="#4762FF"
+                stroke="hsl(var(--main-color))"
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -260,7 +261,7 @@ export const SafePage = () => {
           {/* Add button (Google Drive style) */}
           <Button
             onClick={() => setShowUploadDialog(true)}
-            className="bg-[#4762FF] text-white rounded-full p-1.5 sm:p-2.5 flex items-center justify-center gap-1 sm:gap-2"
+            className="bg-main text-white rounded-full p-1.5 sm:p-2.5 flex items-center justify-center gap-1 sm:gap-2"
           >
             {/* Plus icon */}
             <svg
@@ -309,7 +310,7 @@ export const SafePage = () => {
             onClick={() => setCategory(key)}
             className={`p-3 sm:p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow ${
               info.color
-            } ${category === key ? "ring-2 ring-[#4762FF]" : ""}`}
+            } ${category === key ? "ring-2 ring-main" : ""}`}
           >
             <div className="text-3xl sm:text-4xl md:text-5xl mb-2 sm:mb-3">
               {info.icon}
@@ -361,7 +362,7 @@ export const SafePage = () => {
             <p className="text-base sm:text-lg">אין כרגע קבצים בתיקייה זו</p>
             <Button
               variant="outline"
-              className="mt-3 sm:mt-4 border-[#4762FF] text-[#4762FF] text-sm"
+              className="mt-3 sm:mt-4 border-main text-main text-sm"
               onClick={() => setShowUploadDialog(true)}
             >
               העלאת קבצים
@@ -441,7 +442,7 @@ export const SafePage = () => {
                         onClick={() => setCategory(key)}
                         className={`p-2 sm:p-3 rounded-lg border text-center ${
                           category === key
-                            ? "bg-blue-50 border-[#4762FF]"
+                            ? "bg-blue-50 border-main"
                             : "bg-white hover:bg-gray-50"
                         }`}
                       >
@@ -494,14 +495,14 @@ export const SafePage = () => {
                   <Button
                     variant="outline"
                     onClick={() => setShowUploadDialog(false)}
-                    className="border-[#4762FF] text-[#4762FF] text-xs sm:text-sm"
+                    className="border-main text-main text-xs sm:text-sm"
                   >
                     ביטול
                   </Button>
                   <Button
                     onClick={handleUpload}
                     disabled={!files.length || loading}
-                    className="bg-[#4762FF] text-white text-xs sm:text-sm"
+                    className="bg-main text-white text-xs sm:text-sm"
                   >
                     {loading ? (
                       <span className="flex items-center gap-2">

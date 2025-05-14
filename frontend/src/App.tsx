@@ -10,6 +10,7 @@ import { StoriesPage } from "./components/pages/StoriesPage";
 import TestLoginButton from "./components/debug/TestLoginButton";
 
 import "./App.css";
+import MainFooter from "./components/footer/MainFooter";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ function App() {
               <Route path="/safe" element={<SafePage />} />
             </Routes>
           </MainLayout>
+          <MainFooter />
         </Router>
       </AuthProvider>
     </QueryClientProvider>

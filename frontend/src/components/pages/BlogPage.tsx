@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useAuth } from "../../contexts/AuthContext";
 import { mockPosts } from "../../data/mock";
 import type { BlogPost } from "../../types/index";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,11 +13,8 @@ export const BlogPage = () => {
   const [showNewPostForm, setShowNewPostForm] = useState(false);
   const [userLikes, setUserLikes] = useState<Record<number, boolean>>({});
 
-  // Main color as specified
-  const mainColor = "#4762FF";
-
   // Simulate authentication
-  const isAuthenticated = true;
+  const { token } = useAuth();
 
   // Category options - simplified to match MirorMe style
   const categoryOptions = [
@@ -51,7 +49,7 @@ export const BlogPage = () => {
 
   // Handle like action
   const handleLike = (id: number) => {
-    if (!isAuthenticated) return;
+    if (!token) return;
     const newLikeStatus = !userLikes[id];
     setUserLikes((prev) => ({ ...prev, [id]: newLikeStatus }));
     setPosts((prev) =>
@@ -63,7 +61,7 @@ export const BlogPage = () => {
 
   // Add new post
   const handleAddPost = () => {
-    if (!newPostContent.trim() || !isAuthenticated) return;
+    if (!newPostContent.trim() || !token) return;
     const newPost: BlogPost = {
       id: Date.now(),
       author: getCategoryLabel(newPostCategory),
@@ -89,23 +87,19 @@ export const BlogPage = () => {
   };
 
   return (
-    <div
-      className="w-full max-w-2xl mx-auto p-6"
-      dir="rtl"
-      style={{ fontFamily: "Rubik, sans-serif" }}
-    >
+    <div className="w-full max-w-2xl mx-auto p-6" dir="rtl">
       {/* Header - With new title and color */}
       <div className="flex items-center justify-between mb-6 border-b pb-5">
         <h2 className="text-xl font-medium">
-          <span style={{ color: mainColor }}>קהילת</span>{" "}
+          <span style={{ color: "hsl(var(--main-color))" }}>קהילת</span>{" "}
           <span className="text-gray-800">MirrorMe</span>
         </h2>
 
-        {isAuthenticated && (
+        {token && (
           <motion.button
             onClick={() => setShowNewPostForm(!showNewPostForm)}
             className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-md text-white text-sm transition-all"
-            style={{ backgroundColor: mainColor }}
+            style={{ backgroundColor: "hsl(var(--main-color))" }}
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
           >
@@ -130,7 +124,8 @@ export const BlogPage = () => {
           onClick={() => setFilter("all")}
           className={`px-4 py-2 rounded-md text-sm transition-all`}
           style={{
-            backgroundColor: filter === "all" ? mainColor : "#F3F4F6",
+            backgroundColor:
+              filter === "all" ? "hsl(var(--main-color))" : "#F3F4F6",
             color: filter === "all" ? "white" : "#374151",
           }}
         >
@@ -143,7 +138,8 @@ export const BlogPage = () => {
             onClick={() => setFilter(cat.value)}
             className={`px-4 py-2 rounded-md text-sm transition-all`}
             style={{
-              backgroundColor: filter === cat.value ? mainColor : "#F3F4F6",
+              backgroundColor:
+                filter === cat.value ? "hsl(var(--main-color))" : "#F3F4F6",
               color: filter === cat.value ? "white" : "#374151",
             }}
           >
@@ -154,7 +150,7 @@ export const BlogPage = () => {
 
       {/* New post form - Clean and minimal with increased padding */}
       <AnimatePresence>
-        {showNewPostForm && isAuthenticated && (
+        {showNewPostForm && token && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
@@ -175,7 +171,9 @@ export const BlogPage = () => {
                     className={`px-3 py-1.5 rounded-md text-xs transition-all`}
                     style={{
                       backgroundColor:
-                        newPostCategory === cat.value ? mainColor : "white",
+                        newPostCategory === cat.value
+                          ? "hsl(var(--main-color))"
+                          : "white",
                       color:
                         newPostCategory === cat.value ? "white" : "#374151",
                       border:
@@ -204,7 +202,7 @@ export const BlogPage = () => {
                   onClick={handleAddPost}
                   disabled={!newPostContent.trim()}
                   className="px-5 py-2 text-white text-sm rounded-md disabled:opacity-50"
-                  style={{ backgroundColor: mainColor }}
+                  style={{ backgroundColor: "hsl(var(--main-color))" }}
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                 >
@@ -255,14 +253,18 @@ export const BlogPage = () => {
                   <div className="flex items-center px-6 py-4 border-t border-gray-100">
                     <button
                       onClick={() => handleLike(post.id)}
-                      disabled={!isAuthenticated}
+                      disabled={!token}
                       className="flex items-center gap-1.5"
                     >
                       <Heart
                         className={`w-5 h-5 transition-colors`}
                         style={{
-                          fill: userLikes[post.id] ? mainColor : "none",
-                          color: userLikes[post.id] ? mainColor : "#9CA3AF",
+                          fill: userLikes[post.id]
+                            ? "hsl(var(--main-color))"
+                            : "none",
+                          color: userLikes[post.id]
+                            ? "hsl(var(--main-color))"
+                            : "#9CA3AF",
                         }}
                       />
                       <span className="text-sm text-gray-600">
@@ -285,15 +287,9 @@ export const BlogPage = () => {
       )}
 
       {/* Login prompt */}
-      {!isAuthenticated && (
+      {!token && (
         <div className="text-center mt-6 border border-gray-200 rounded-md p-6 bg-gray-50">
           <p className="text-sm text-gray-700 mb-3">התחברי כדי להשתתף בשיחה</p>
-          <button
-            className="px-5 py-2 text-white text-sm rounded-md"
-            style={{ backgroundColor: mainColor }}
-          >
-            התחברות
-          </button>
         </div>
       )}
     </div>
