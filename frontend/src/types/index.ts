@@ -37,3 +37,31 @@ export interface NavButtonProps {
 export interface LayoutProps {
   children: ReactNode;
 }
+
+export interface Story {
+  id: string;
+  title: string;
+  body: string;
+  date: Date;
+  author?: string;
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+  files?: UploadedFile[];
+}
+
+export interface UploadedFile {
+  url: string; // Server URL
+  previewUrl: string; // Browser-generated URL for preview
+  type: string;
+  name: string;
+}
+
+export interface CategoryInfo {
+  label: string;
+  icon: string;
+  acceptedTypes: string;
+  color: string;
+}

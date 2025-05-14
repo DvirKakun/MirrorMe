@@ -6,7 +6,7 @@ import { ChatPage } from "./components/pages/ChatPage";
 import { BlogPage } from "./components/pages/BlogPage";
 import { SafePage } from "./components/pages/SafePage";
 import { InfoPage } from "./components/pages/InfoPage";
-import { StoriesPage } from "./components/pages/StoriesPage";
+import StoriesPage from "./components/pages/StoriesPage";
 import TestLoginButton from "./components/debug/TestLoginButton";
 
 import "./App.css";

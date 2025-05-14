@@ -6,19 +6,7 @@ import { TypingIndicator } from "../../components/widgets/TypingIndicator";
 import { clsx } from "clsx";
 import { useAuth } from "../../contexts/AuthContext";
 import { FileVideo, Mic, X } from "lucide-react";
-
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-  files?: UploadedFile[];
-}
-
-interface UploadedFile {
-  url: string; // Server URL
-  previewUrl: string; // Browser-generated URL for preview
-  type: string;
-  name: string;
-}
+import type { ChatMessage, UploadedFile } from "../../types";
 
 export const ChatPage = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
