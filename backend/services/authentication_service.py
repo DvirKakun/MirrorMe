@@ -11,9 +11,11 @@ def register_user(email: str, password: str):
     if User.objects(email=email).first():
         raise Exception("User already exists")
 
+    tokened = create_token(email)
     hashed_password = pwd_context.hash(password)
     user = User(
         email=email,
+        token=tokened,
         hashed_password=hashed_password,
         created_at=datetime.now(tz=timezone.utc),
         updated_at=datetime.now(tz=timezone.utc),
@@ -31,5 +33,7 @@ def login_user(email: str, password: str):
     user = User.objects(email=email).first()
     if not user or not pwd_context.verify(password, user.hashed_password):
         raise Exception("Invalid credentials")
+    else:
+        user.token = create_token(email)
     
     return create_token(email)

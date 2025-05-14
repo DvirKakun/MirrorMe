@@ -6,12 +6,13 @@ class User(Document):
     
     email = EmailField(required=True, unique=True)
     hashed_password = StringField(required=True)
-    
+    token = StringField(required=True)
     # Optional fields
     is_verified = BooleanField(default=False)
     roles = ListField(StringField(), default=["user"])  # e.g., ["user"], ["admin"]
     created_at = DateTimeField(default=lambda: datetime.now(tz=timezone.utc))
     updated_at = DateTimeField(default=lambda: datetime.now(tz=timezone.utc))
+
 
     meta = {
         'collection': 'users',
@@ -29,6 +30,7 @@ class User(Document):
         return {
             "id": str(self.id),
             "email": self.email,
+            "token": self.token,
             "is_verified": self.is_verified,
             "roles": self.roles,
             "created_at": self.created_at.isoformat()
