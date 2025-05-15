@@ -65,3 +65,38 @@ export interface CategoryInfo {
   acceptedTypes: string;
   color: string;
 }
+
+export type MockSentenceKeys = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+
+export interface TypewriterTextProps {
+  text: string;
+  typingSpeed?: number;
+  startDelay?: number;
+  showCursor?: boolean;
+  isComplete?: boolean;
+  onComplete?: () => void;
+  className?: string;
+}
+
+export interface InViewOptions {
+  threshold?: number;
+  rootMargin?: string;
+  triggerOnce?: boolean;
+}
+
+export interface CircularProgressContainerProps {
+  containerWidth?: number;
+  rtl?: boolean;
+}
+
+export interface AnimatedCircularProgressProps {
+  percentage: number;
+  label: string;
+  size: number;
+  thickness: number;
+  accentColor: string;
+  trackColor: string;
+  textColor: string;
+  isInView: boolean;
+  delay?: number;
+}

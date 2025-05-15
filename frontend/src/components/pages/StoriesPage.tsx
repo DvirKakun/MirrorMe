@@ -141,7 +141,7 @@ const StoriesPage = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 rtl" dir="rtl">
+    <div className="max-w-6xl mx-auto px-4 py-8 mt-[104px] rtl " dir="rtl">
       {/* Header with title and add button */}
       <div className="flex flex-col items-start mb-8 gap-[16px]">
         <motion.h1

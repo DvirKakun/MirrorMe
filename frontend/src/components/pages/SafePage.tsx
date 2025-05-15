@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "../../components/ui/card";
 import { Label } from "../../components/ui/label";
+import { useAlert } from "../../contexts/AlertContext";
 
 export const SafePage = () => {
   const { token } = useAuth();
@@ -20,6 +21,7 @@ export const SafePage = () => {
   const [vaultFiles, setVaultFiles] = useState<VaultFile[]>([]);
   const [sort, setSort] = useState("desc");
   const [isFetching, setIsFetching] = useState(false);
+  const { showAlert } = useAlert();
 
   // Define the type for the entire category information object
   type CategoriesMap = {
@@ -73,8 +75,9 @@ export const SafePage = () => {
   const handleUnlock = () => {
     if (safeCode === validSafeCode) {
       setIsUnlocked(true);
+      showAlert("הכספת נפתחה בהצלחה!", "success");
     } else {
-      alert("קוד הכספת שגוי. אנא נסי שוב.");
+      showAlert("קוד הכספת שגוי. אנא נסי שוב.", "error");
     }
   };
 
@@ -121,7 +124,7 @@ export const SafePage = () => {
   if (!token) {
     return (
       <div
-        className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] p-4 sm:p-6 w-full"
+        className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] p-4 sm:p-6 w-full mt-[104px]"
         dir="rtl"
       >
         <div className="flex flex-col md:flex-row max-w-full sm:max-w-lg md:max-w-3xl lg:max-w-5xl w-full mx-auto items-center md:items-start gap-6 md:gap-0">
@@ -160,7 +163,7 @@ export const SafePage = () => {
   if (!isUnlocked) {
     return (
       <div
-        className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] p-4 sm:p-6 w-full"
+        className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] p-4 sm:p-6 w-full mt-[104px]"
         dir="rtl"
       >
         <div className="flex flex-col md:flex-row max-w-full sm:max-w-lg md:max-w-3xl lg:max-w-5xl w-full mx-auto items-center md:items-start gap-6 md:gap-0">
@@ -212,7 +215,7 @@ export const SafePage = () => {
   // Safe is unlocked - Google Drive-like interface
   return (
     <div
-      className="w-full max-w-full sm:max-w-xl md:max-w-3xl lg:max-w-5xl mx-auto py-4 sm:py-6 md:py-8 px-3 sm:px-4"
+      className="w-full max-w-full sm:max-w-xl md:max-w-3xl lg:max-w-5xl mx-auto py-4 sm:py-6 md:py-8 px-3 sm:px-4 mt-[104px]"
       dir="rtl"
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-3 sm:gap-0">

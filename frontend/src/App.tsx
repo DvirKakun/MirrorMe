@@ -11,28 +11,30 @@ import TestLoginButton from "./components/debug/TestLoginButton";
 
 import "./App.css";
 import MainFooter from "./components/footer/MainFooter";
+import { AlertProvider } from "./contexts/AlertContext";
 
 const queryClient = new QueryClient();
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router>
-          <TestLoginButton />
-
-          <MainLayout>
-            <Routes>
-              <Route path="/" element={<ChatPage />} />
-              <Route path="/blog" element={<BlogPage />} />
-              <Route path="/info" element={<InfoPage />} />
-              <Route path="/stories" element={<StoriesPage />} />
-              <Route path="/safe" element={<SafePage />} />
-            </Routes>
-          </MainLayout>
-          <MainFooter />
-        </Router>
-      </AuthProvider>
+      <AlertProvider>
+        <AuthProvider>
+          <Router>
+            <TestLoginButton />
+            <MainLayout>
+              <Routes>
+                <Route path="/" element={<ChatPage />} />
+                <Route path="/blog" element={<BlogPage />} />
+                <Route path="/info" element={<InfoPage />} />
+                <Route path="/stories" element={<StoriesPage />} />
+                <Route path="/safe" element={<SafePage />} />
+              </Routes>
+            </MainLayout>
+            <MainFooter />
+          </Router>
+        </AuthProvider>
+      </AlertProvider>
     </QueryClientProvider>
   );
 }

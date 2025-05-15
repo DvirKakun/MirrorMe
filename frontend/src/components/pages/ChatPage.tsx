@@ -2,11 +2,17 @@ import { useState, useRef, useEffect } from "react";
 import { Textarea } from "../../components/ui/textarea";
 import { Card, CardContent } from "../../components/ui/card";
 import { ChatFileUpload } from "../../components/chat/ChatFileUpload";
-import { TypingIndicator } from "../../components/widgets/TypingIndicator";
+import {
+  TypingIndicator,
+  TypewriterText,
+} from "../../components/widgets/TypingIndicator";
 import { clsx } from "clsx";
 import { useAuth } from "../../contexts/AuthContext";
 import { FileVideo, Mic, X } from "lucide-react";
 import type { ChatMessage, UploadedFile } from "../../types";
+import { mockSentences } from "../../data/mock";
+import type { MockSentenceKeys } from "../../types";
+import { CircularProgressContainer } from "../widgets/CircularProgressWidget/CircularProgressContainer";
 
 export const ChatPage = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -16,11 +22,20 @@ export const ChatPage = () => {
   const [showFileUpload, setShowFileUpload] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
+  const [typingAnimationInProgress, setTypingAnimationInProgress] =
+    useState(false);
+
+  // New state for tracking which messages have completed their animation
+  const [animatedMessages, setAnimatedMessages] = useState<Set<number>>(
+    new Set()
+  );
+  // Auto-complete timeout reference for long messages
+  const autoCompleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { token } = useAuth();
 
-  const [conversationId, setConversationId] = useState<string | null>(() => {
-    return localStorage.getItem("chatConversationId");
+  const [sessionId, setsessionId] = useState<string | null>(() => {
+    return localStorage.getItem("chatsessionId");
   });
 
   // Handle file upload button click
@@ -94,9 +109,8 @@ export const ChatPage = () => {
 
     // Notify the chat endpoint about successful file upload
     try {
-      // Check if we have a conversation ID first
-      if (conversationId) {
-        await fetch(`http://localhost:8000/conversation/${conversationId}`, {
+      if (sessionId) {
+        await fetch(`http://localhost:8000/conversation/${sessionId}`, {
           method: "PUT", // Changed from POST to PUT
           headers: {
             "Content-Type": "application/json",
@@ -106,13 +120,10 @@ export const ChatPage = () => {
             file_type: category,
             amount: previewFiles.length,
             assistant_message: successMessage,
-            // conversation_id removed from body since it's in the URL
           }),
         });
       } else {
-        console.warn(
-          "No conversation ID available, cannot update conversation"
-        );
+        console.warn("No session ID available, cannot update conversation");
       }
     } catch (err) {
       console.error("Failed to notify about file upload:", err);
@@ -149,15 +160,63 @@ export const ChatPage = () => {
           });
         }
       });
+
+      // Clear any auto-complete timeouts
+      if (autoCompleteTimeoutRef.current) {
+        clearTimeout(autoCompleteTimeoutRef.current);
+      }
     };
   }, []);
 
-  const sendMessage = async () => {
-    // Regular text message sending logic unchanged
-    if (!input.trim()) return;
+  useEffect(() => {
+    // Calculate if any messages are currently animating
+    const hasActiveAnimations = messages.some(
+      (m, i) => m.role === "assistant" && !animatedMessages.has(i)
+    );
+
+    setTypingAnimationInProgress(hasActiveAnimations);
+  }, [messages, animatedMessages]);
+
+  const sendMessage = async (messageToSend?: string) => {
+    // If we have a messageToSend from URL, display it as an assistant message first
+    if (messageToSend) {
+      if (!chatStarted) setChatStarted(true);
+
+      // Add the initial assistant message to the UI immediately
+      setMessages((m) => [...m, { role: "assistant", content: messageToSend }]);
+
+      // Send this message to the backend as context without displaying user message
+      // try {
+      //   const res = await fetch("http://localhost:8000/chat", {
+      //     method: "POST",
+      //     headers: { "Content-Type": "application/json" },
+      //     body: JSON.stringify({
+      //       message: "", // Empty user message
+      //       session_id: sessionId || "",
+      //       entry_statement: messageToSend, // Provide context about what message initiated the conversation
+      //     }),
+      //   });
+      //   const data = await res.json();
+
+      //   if (data.session_id) {
+      //     setsessionId(data.session_id);
+      //     localStorage.setItem("chatsessionId", data.session_id);
+      //   }
+      //   // Don't add another assistant response since we already displayed the initial message
+      // } catch (err) {
+      //   console.error(err);
+      // } finally {
+      //   setLoading(false);
+      // }
+      return; // Exit early - we've handled the initial context
+    }
+
+    // Normal message flow for user-initiated messages
+    const messageContent = input;
+    if (!messageContent.trim() || loading || typingAnimationInProgress) return;
     if (!chatStarted) setChatStarted(true);
 
-    const userMsg: ChatMessage = { role: "user", content: input };
+    const userMsg: ChatMessage = { role: "user", content: messageContent };
     setMessages((m) => [...m, userMsg]);
     setInput("");
     setLoading(true);
@@ -167,16 +226,17 @@ export const ChatPage = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: input,
-          conversation_id: conversationId || "",
+          message: messageContent,
+          session_id: sessionId || "",
         }),
       });
       const data = await res.json();
-      if (data.conversation_id) {
-        // Changed from session_id
-        setConversationId(data.conversation_id); // Changed from session_id
-        localStorage.setItem("chatConversationId", data.conversation_id); // Changed from chatSessionId
+      if (data.session_id) {
+        setsessionId(data.session_id);
+        localStorage.setItem("chatsessionId", data.session_id);
       }
+
+      // Add assistant response - it will be animated if not in animatedMessages set
       setMessages((m) => [...m, { role: "assistant", content: data.response }]);
     } catch (err) {
       console.error(err);
@@ -193,10 +253,36 @@ export const ChatPage = () => {
   };
 
   useEffect(() => {
-    if (messages.length > 1) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messages.length > 0) {
+      // Add a small delay to ensure any rendering completes first
+      setTimeout(() => {
+        // Use block: "end" to position the element at the bottom of the viewport
+        // instead of centering it
+        messagesEndRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "end",
+        });
+      }, 100);
     }
-  }, [messages]);
+  }, [messages, loading]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const indexFromUrl = params.get("index");
+    const indexAsInteger = indexFromUrl ? parseInt(indexFromUrl, 10) : null;
+    const messageFromURL =
+      indexAsInteger && indexAsInteger >= 1 && indexAsInteger <= 10
+        ? mockSentences[indexAsInteger as MockSentenceKeys]
+        : null;
+
+    if (messageFromURL) {
+      // Automatically send the message
+      sendMessage(messageFromURL);
+
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   const MessageFiles = ({ files }: { files: UploadedFile[] }) => {
     return (
@@ -273,9 +359,18 @@ export const ChatPage = () => {
     );
   };
 
+  // Handler for when typewriter animation completes
+  const handleTypingComplete = (index: number) => {
+    setAnimatedMessages((prev) => {
+      const newSet = new Set(prev);
+      newSet.add(index);
+      return newSet;
+    });
+  };
+
   return (
     <section
-      className="flex flex-col w-full max-w-[100%] sm:max-w-[95%] md:max-w-[90%] lg:max-w-[1064px] h-auto min-h-[calc(100vh-150px)] md:h-[518px] pt-4 sm:pt-6 md:pt-10 pb-4 mt-2 md:mt-4 mx-auto"
+      className="flex flex-col w-full max-w-[100%] sm:max-w-[95%] md:max-w-[90%] lg:max-w-[1064px] h-auto min-h-[calc(100vh-150px)] md:h-[518px] pt-4 sm:pt-6 md:pt-10 pb-4 mt-[104px] mx-auto"
       dir="rtl"
     >
       <ImageLightbox />
@@ -297,6 +392,10 @@ export const ChatPage = () => {
             את מוזמנת לכתוב.
             <br />
             לא כדי להסביר, רק כדי לשחרר.
+          </p>
+          <p className="mt-4 text-sm sm:text-base text-[#555]">
+            השיחה נמחקת אוטומטית כשתסגרי את העמוד, אלא אם תבחרי להירשם — ואז
+            נשמור אותה בצורה מאובטחת כדי שאוכל להמשיך ללוות אותך ברגישות.
           </p>
         </div>
       )}
@@ -323,12 +422,24 @@ export const ChatPage = () => {
                 className="p-3 md:p-4 text-sm sm:text-base leading-relaxed font-['Rubik'] text-zinc-800 rtl whitespace-pre-wrap"
                 dir="rtl"
               >
-                <div
-                  className="hebrew-text"
-                  style={{ direction: "rtl", unicodeBidi: "plaintext" }}
-                >
-                  {m.content}
-                </div>
+                {m.role === "assistant" && !animatedMessages.has(i) ? (
+                  // For assistant messages that haven't been animated yet, use TypewriterText
+                  <TypewriterText
+                    text={m.content}
+                    typingSpeed={20}
+                    showCursor={true}
+                    onComplete={() => handleTypingComplete(i)}
+                    className="hebrew-text"
+                  />
+                ) : (
+                  // For user messages and already-animated assistant messages
+                  <div
+                    className="hebrew-text"
+                    style={{ direction: "rtl", unicodeBidi: "plaintext" }}
+                  >
+                    {m.content}
+                  </div>
+                )}
 
                 {/* Display uploaded files if present */}
                 {m.files && m.files.length > 0 && (
@@ -355,7 +466,7 @@ export const ChatPage = () => {
         />
       )}
 
-      <div className="flex justify-center items-center w-full">
+      <div className="flex justify-center items-center w-full mb-[104px]">
         <div className="bg-[#ededed] rounded-[32px] p-3 sm:p-4 md:p-[24px] w-full sm:w-[90%] md:w-[848px] h-auto min-h-[120px] sm:min-h-[160px] md:h-[192px] shadow-md relative">
           <Textarea
             value={input}
@@ -409,7 +520,7 @@ export const ChatPage = () => {
             </div>
 
             <button
-              onClick={sendMessage}
+              onClick={() => sendMessage()}
               className="bg-[#4762FF] text-white rounded-full flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12"
             >
               <svg
@@ -430,6 +541,7 @@ export const ChatPage = () => {
           </div>
         </div>
       </div>
+      <CircularProgressContainer />
     </section>
   );
 };
