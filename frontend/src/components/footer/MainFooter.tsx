@@ -2,7 +2,7 @@ import React from "react";
 export const MainFooter: React.FC = () => {
   return (
     <footer
-      className="bg-gray-50 border-t border-gray-200 pt-10 pb-6 px-[6rem] mt-20 md:mt-24 lg:mt-[42rem]"
+      className="bg-gray-50 border-t border-gray-200 pt-10 pb-6 px-[6rem] mt-20 md:mt-24 lg:mt-[36rem]"
       dir="rtl"
     >
       <div className="container mx-auto px-4 md:px-8">
