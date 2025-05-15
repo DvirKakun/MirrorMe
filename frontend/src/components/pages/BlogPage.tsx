@@ -87,7 +87,7 @@ export const BlogPage = () => {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-6" dir="rtl">
+    <div className="w-full max-w-2xl mx-auto p-6 mt-[104px]" dir="rtl">
       {/* Header - With new title and color */}
       <div className="flex items-center justify-between mb-6 border-b pb-5">
         <h2 className="text-xl font-medium">

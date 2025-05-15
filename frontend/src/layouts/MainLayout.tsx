@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { ButterflyButton } from "../components/widgets/ButterflyButton";
 import { SOSButton } from "../components/widgets/SOSButton";
 import { NavButton } from "../components/navigation/NavButton";
+import { Header } from "../components/navigation/Header";
 
 export const MainLayout = ({ children }: LayoutProps) => {
   // Get current location for active state
@@ -12,15 +13,11 @@ export const MainLayout = ({ children }: LayoutProps) => {
   return (
     <div className="min-h-screen bg-white text-zinc-900 flex flex-col">
       {/* Top header with MirrorMe title */}
-      <header className="px-4 sm:px-8 md:px-12 lg:px-24 py-3 md:py-4 border-b shadow-sm bg-white flex items-center">
-        <h1 className="font-bold text-xl tracking-tight ml-2 sm:ml-6">
-          MirrorMe
-        </h1>
-      </header>
+      <Header />
 
       <div className="flex flex-1 relative">
         {/* Left side navigation */}
-        <aside className="w-20 sm:w-24 md:w-28 lg:w-32 bg-white border-r flex flex-col items-center py-6 md:py-10 lg:py-20 space-y-6 md:space-y-8 fixed h-full z-20">
+        <aside className="sm:w-24 md:w-28 lg:w-[80px] bg-white border-r flex flex-col items-center md:py-10 lg:py-40 space-y-6 md:space-y-8 fixed h-full z-20">
           <NavButton
             to="/"
             label="צ'אט"
