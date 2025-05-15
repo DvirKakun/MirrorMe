@@ -1,6 +1,6 @@
 import type { LayoutProps } from "../types/index";
 import { useLocation } from "react-router-dom";
-import { ButterflyButton } from "../components/widgets/ButterflyButton";
+// import { ButterflyButton } from "../components/widgets/ButterflyButton";
 import { SOSButton } from "../components/widgets/SOSButton";
 import { NavButton } from "../components/navigation/NavButton";
 import { Header } from "../components/navigation/Header";
@@ -220,7 +220,7 @@ export const MainLayout = ({ children }: LayoutProps) => {
           {children}
           {/* Floating helpers */}
 
-          <ButterflyButton />
+          {/* <ButterflyButton /> */}
           <SOSButton />
         </main>
       </div>

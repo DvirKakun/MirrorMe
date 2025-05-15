@@ -120,6 +120,34 @@ export const SafePage = () => {
     return sorted;
   }, [vaultFiles, sort]);
 
+  const slideInFromLeft = {
+    hidden: { x: -100, opacity: 0 },
+    visible: {
+      x: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        damping: 15,
+        stiffness: 100,
+        duration: 0.8,
+      },
+    },
+  };
+
+  const slideInFromRight = {
+    hidden: { x: 100, opacity: 0 },
+    visible: {
+      x: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        damping: 15,
+        stiffness: 100,
+        duration: 0.8,
+      },
+    },
+  };
+
   // Not authenticated view
   if (!token) {
     return (
@@ -129,36 +157,47 @@ export const SafePage = () => {
       >
         <div className="flex flex-col md:flex-row max-w-full sm:max-w-lg md:max-w-3xl lg:max-w-5xl w-full mx-auto items-center md:items-start gap-6 md:gap-0">
           {/* Right side - Text and login message */}
-          <div className="w-full md:w-3/5 space-y-4 pt-0 md:pt-8 order-2 md:order-1">
+          <motion.div
+            className="w-full md:w-3/5 space-y-4 pt-0 md:pt-8 order-2 md:order-1"
+            initial="hidden"
+            animate="visible"
+            variants={slideInFromRight}
+          >
             <h1 className="text-2xl md:text-3xl font-bold text-[#333333] mb-2 text-center md:text-right">
               ברוכה הבאה אל <span className="text-main">הכספת</span>
             </h1>
 
-            <p className="text-base md:text-lg text-[#333333] mb-4 md:mb-6 text-center md:text-right">
-              כאן תוכלי להעלות איזה קבצים שתרצי הכל מוגן באבטחה
+            <p className="text-[#666666] mt-1 sm:mt-2 text-center sm:text-right text-sm sm:text-base">
+              כאן תוכלי להעלות איזה קבצים שתרצי -
+              <span className="text-[#4361ee] font-bold">
+                {" "}
+                הכל מוגן באבטחה{" "}
+              </span>
             </p>
-
-            {/* Reduced the margin-top here from mt-4 md:mt-10 to mt-2 md:mt-4 */}
             <div className="mt-2 md:mt-4 space-y-4 text-center md:text-right">
               <p className="text-[#666666] font-medium">
-                כדי לגשת לכספת, עליך להתחבר למערכת תחילה.
+                כדי לגשת לכספת, עליך להתחבר למערכת תחילה דרך הצ'אט.
               </p>
             </div>
-          </div>
+          </motion.div>
 
           {/* Left side - Image with blue border */}
-          <div className="w-full sm:w-2/3 md:w-2/5 p-2 bg-white md:mr-6 order-1 md:order-2 flex justify-center">
+          <motion.div
+            className="w-full sm:w-2/3 md:w-2/5 p-2 bg-white md:mr-6 order-1 md:order-2 flex justify-center"
+            initial="hidden"
+            animate="visible"
+            variants={slideInFromLeft}
+          >
             <img
               src="/images/locked-safe.png"
               alt="כספת נעולה"
               className="w-full max-w-[250px] md:max-w-full object-contain"
             />
-          </div>
+          </motion.div>
         </div>
       </div>
     );
   }
-
   // Authenticated but need safe code
   if (!isUnlocked) {
     return (
@@ -224,7 +263,8 @@ export const SafePage = () => {
             הכספת הדיגיטלית שלך
           </h1>
           <p className="text-[#666666] mt-1 sm:mt-2 text-center sm:text-right text-sm sm:text-base">
-            כאן תוכלי להעלות איזה קבצים שתרצי הכל מוגן באבטחה
+            כאן תוכלי להעלות איזה קבצים שתרצי
+            <span className="text-[#4361ee] font-bold">הכל מוגן באבטחה</span>
           </p>
         </div>
 
